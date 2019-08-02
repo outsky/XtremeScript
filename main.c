@@ -1,22 +1,51 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "list.h"
+#include "xasm.h"
 
-int main() {
-    list *l = list_new();
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        printf("%s filename\n", argv[0]);
+        exit(-1);
+    }
+    FILE *f = fopen(argv[1], "r");
+    if (!f) {
+        perror("Open file failed");
+        exit(-1);
+    }
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    rewind(f);
 
-    lnode *n1 = list_newnode(strdup("abc"));
-    lnode *n2 = list_newnode(strdup("def"));
-    lnode *n3 = list_newnode(strdup("ghi"));
+    char *source = (char *)malloc(fsize+1);
+    memset(source, 0, fsize + 1);
+    fread(source, sizeof(char), fsize, f);
+    fclose(f); f = NULL;
 
-    list_pushback(l, n1);
-    list_pushback(l, n2);
-    list_pushback(l, n3);
+    A_State *S = A_newstate(source);
+    free(source);
 
-    for (lnode *n = l->head; n != NULL; n = n->next) {
-        printf("%s\n", (char*)n->data);
+    for (;;) {
+        A_TokenType t = A_nexttoken(S);
+        printf("<%d: ", t);
+        if (t == A_TT_EOT) {
+            printf("EOT>\n");
+            break;
+        }
+        if (t == A_TT_NEWLINE) {
+            printf("NL>\n");
+        } else if (t == A_TT_INT) {
+            printf("%d> ", S->curtoken.u.n);
+        } else if (t == A_TT_FLOAT) {
+            printf("%f> ", S->curtoken.u.f);
+        } else if (t == A_TT_STRING || t == A_TT_IDENT) {
+            printf("%s> ", S->curtoken.u.s);
+        } else {
+            printf(">");
+        }
     }
 
-    list_free(l);
+    A_freestate(S);
+
     return 0;
 }
