@@ -1,0 +1,56 @@
+; Example script
+
+; Demonstrates the basic layout of an XVM
+; assembly-language script.
+
+; ---- Globals ---------------------------------------------
+
+Var GlobalVar
+Var GlobalArray[256]
+
+; ---- Functions -------------------------------------------
+
+; A simple addition function
+Func MyAdd {
+    ; Import our parameters
+    Param Y
+    Param X
+    ; Declare local data
+    Var Sum
+    Mov Sum, X
+    Add Sum, Y
+    ; Put the result in the _RetVal register
+    Mov _RetVal, Sum
+    ; Remember, Ret will be automatically added
+}
+
+; Just a bizarre function that does nothing in particular
+Func MyFunc
+{
+    ; This function doesn't accept parameters
+    ; But it does have local data
+    Var MySum
+    ; We're going to test the Add function, so we'll
+    ; start by pushing two integer parameters.
+    Push 16
+    Push 32
+    ; Next we make the function call itself
+    Call MyAdd
+    ; And finally, we grab the return value from _RetVal
+    Mov MySum, _RetVal
+    ; Multiply MySum by 2 and store it in GlobalVar
+    Mul MySum, 2
+    Mov GlobalVar, MySum
+    ; Set some array values
+    Mov GlobalArray[0], "This"
+    Mov GlobalArray[1], "is"
+    Mov GlobalArray[2], "an"
+    Mov GlobalArray[3], "arry."
+}
+
+; This special _Main() function, which will be automatically executed
+Func _Main
+{
+    ; Call the MyFunc test function
+    Call MyFunc
+}
