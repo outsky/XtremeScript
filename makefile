@@ -1,5 +1,5 @@
-test: list.o main.o xasm.o lib.o
-	cc -g -o test list.o main.o xasm.o lib.o
+xasm: list.o main.o xasm.o lib.o
+	cc -g -o xasm.out list.o main.o xasm.o lib.o
 
 lib.o: lib.h lib.c
 	cc -g -c lib.c
