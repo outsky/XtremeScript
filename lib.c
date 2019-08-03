@@ -8,21 +8,26 @@ void fatal(const char *func, int line, char *msg) {
     exit(-1);
 }
 
-const char* snapshot(const char* code, int pos, int count) {
-    char *s = (char*)malloc((count + 2) * sizeof(*s));
-    memset(s, 0, count + 1);
-    char *p = s;
-    int half = (int)(count / 2);
-    int begin = pos > half ? pos - half : 0;
-    for (int i = 0; i < count; ++i) {
-        char c = code[begin + i];
-        if (c == '\0') {
+void snapshot(const char* code, int pos) {
+    int begin, end;
+    for (begin = pos; begin > 0; --begin) {
+        if (code[begin] == '\n') {
+            ++begin;
             break;
         }
-        *p++ = c;
-        if (begin + i == pos) {
-            *p++ = '$';
+    }
+    for (end = pos; ; ++end) {
+        char c = code[end];
+        if (c == '\0' || c == '\n') {
+            --end;
+            break;
         }
     }
-    return s;
+    char *snap = strndup(code + begin, end - begin + 1);
+    printf("'''\n%s\n", snap);
+    free(snap);
+    for (int i = begin; i < end + 1; ++i) {
+        printf("%c", i == pos - 1 ? '^' : ' ');
+    }
+    printf("\n'''\n");
 }

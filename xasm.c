@@ -6,6 +6,8 @@
 #include "xasm.h"
 #include "lib.h"
 
+#define A_FATAL(msg) snapshot(As->program, As->curidx); fatal(__FUNCTION__, __LINE__, msg)
+
 static const char *_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
     "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
     "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
@@ -14,7 +16,7 @@ static int _opcfg[][4] = {
     /*
     param   flag1   flag2   flag3
     */
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM, 0}, // MOV dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM | A_OTM_REG, 0}, // MOV dest, src
     {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // ADD dest, src
     {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // SUB dest, src
     {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // MUL dest, src
@@ -52,7 +54,7 @@ static int _opcfg[][4] = {
 
 static void _initops(A_State *As);
 static A_Opcode* _newop(const char *name, int code, int param);
-static void _setopflag(A_Opcode *op, int idx, int flag);
+static void _setopflag(A_State *As, A_Opcode *op, int idx, int flag);
 static A_Opcode* _getop(A_State *As, const char *name);
 
 static int _add_instr(A_State *As, int opcode, list *operands);
@@ -179,7 +181,7 @@ A_TokenType A_nexttoken(A_State *As) {
                 if (c == '}') {As->curtoken.t = A_TT_CLOSE_BRACE; return A_TT_CLOSE_BRACE;}
                 if (c == '\n') {As->curtoken.t = A_TT_NEWLINE; ++As->curline; return A_TT_NEWLINE;}
 
-                FATAL("invalid char");
+                A_FATAL("invalid char");
             }
             case A_LS_INT: {
                 if (isdigit(c)) {
@@ -201,14 +203,14 @@ A_TokenType A_nexttoken(A_State *As) {
                 }
 
                 printf("\nunexpected char: %c(%d)\n", c, (int)c);
-                FATAL("unexpect char");
+                A_FATAL("unexpect char");
             }
             case A_LS_INTDOT: {
                 if (isdigit(c)) {
                     ls = A_LS_FLOAT;
                     break;
                 }
-                FATAL("unexpect char");
+                A_FATAL("unexpect char");
             }
             case A_LS_FLOAT: {
                 if (isdigit(c)) {
@@ -224,7 +226,7 @@ A_TokenType A_nexttoken(A_State *As) {
                     return A_TT_FLOAT;
                 }
 
-                FATAL("unexpect char");
+                A_FATAL("unexpect char");
             }
             case A_LS_STR_HALF: {   // TODO: deal with escape \"
                 if (c == '"') {
@@ -266,7 +268,7 @@ A_TokenType A_nexttoken(A_State *As) {
                 break;
             }
             default: {
-                FATAL("invalid state");
+                A_FATAL("invalid state");
             }
         }
     }
@@ -278,7 +280,7 @@ static void _parse1(A_State *As) {
     for (;;) {
         A_TokenType t = A_nexttoken(As);
         if (t == A_TT_INVALID) {
-            FATAL("invalid token type");
+            A_FATAL("invalid token type");
         }
 
         switch (t) {
@@ -286,11 +288,11 @@ static void _parse1(A_State *As) {
                 char *s = strdup(As->curtoken.u.s);
                 if (A_nexttoken(As) != A_TT_COLON) {
                     free(s);
-                    FATAL("label miss colon");
+                    A_FATAL("label miss colon");
                 }
                 if (curfunc < 0) {
                     free(s);
-                    FATAL("label in global scope is not allowed");
+                    A_FATAL("label in global scope is not allowed");
                 }
                 _add_label(As, s, curfunc, As->instr->count);
                 free(s);
@@ -298,13 +300,8 @@ static void _parse1(A_State *As) {
             }
             case A_TT_CLOSE_BRACE: {
                 if (curfunc < 0) {
-                    FATAL("unexpected `}'");
+                    A_FATAL("unexpected `}'");
                 }
-                A_Opcode *ret = _getop(As, "RET");
-                if (ret == NULL) {
-                    FATAL("op `ret' not defined");
-                }
-                _add_instr(As, ret->code, NULL);
                 curfunc = -1;
                 break;
             }
@@ -313,46 +310,26 @@ static void _parse1(A_State *As) {
             }
             case A_TT_INSTR: {
                 if (curfunc < 0) {
-                    FATAL("instr in global scope is not allowed");
+                    A_FATAL("instr in global scope is not allowed");
                 }
                 A_Opcode *op = _getop(As, As->curtoken.u.s);
                 if (op == NULL) {
-                    FATAL("op not registered");
+                    A_FATAL("op not registered");
                 }
-                list *operands = list_new();
-                for (int i = 0; i < op->param; ++i) {
-                    A_nexttoken(As);
-                    int flag = op->opflags[i];
-                    A_InstrOperand *iop = _genoperand(As, flag, curfunc);
-                    if (iop == NULL) {
-                        const char *snap = snapshot(As->program, As->curidx, 32);
-                        printf("'''\n%s\n'''\n", snap);
-                        free((void*)snap);
-                        printf("line %d: op %s param %d, type %d, flag %d, func %d\n", As->curline, 
-                            op->name, i, As->curtoken.t, flag, curfunc);
-                        FATAL("instr operand type error");
-                    }
-                    list_pushback(operands, iop);
-
-                    if (i != op->param - 1) {
-                        if (A_nexttoken(As) != A_TT_COMMA) {
-                            FATAL("missing `,' for instr params");
-                        }
-                    }
-                }
-                _add_instr(As, op->code, operands);
+                while (A_nexttoken(As) != A_TT_NEWLINE) {}
+                A_cachenexttoken(As);
                 break;
             }
             case A_TT_SETSTACKSIZE: {
                 if (stacksizeflag) {
-                    FATAL("Cant set stack size more than once");
+                    A_FATAL("Cant set stack size more than once");
                 }
                 if (curfunc > 0) {
-                    FATAL("Cant set stack size in function");
+                    A_FATAL("Cant set stack size in function");
                 }
                 t = A_nexttoken(As);
                 if (t != A_TT_INT) {
-                    FATAL("`SETSTACKSIZE' must have an integer param");
+                    A_FATAL("`SETSTACKSIZE' must have an integer param");
                 }
                 As->mh.stacksize = As->curtoken.u.n;
                 stacksizeflag = 1;
@@ -361,20 +338,20 @@ static void _parse1(A_State *As) {
 
             case A_TT_VAR: {
                 if (A_nexttoken(As) != A_TT_IDENT) {
-                    FATAL("var expect ident");
+                    A_FATAL("var expect ident");
                 }
                 char *id = strdup(As->curtoken.u.s);
 
                 if (A_nexttoken(As) == A_TT_OPEN_BRACKET) {
                     if (A_nexttoken(As) != A_TT_INT) {
                         free(id);
-                        FATAL("array must have int index");
+                        A_FATAL("array must have int index");
                     }
                     int n = As->curtoken.u.n;
 
                     if (A_nexttoken(As) != A_TT_CLOSE_BRACKET) {
                         free(id);
-                        FATAL("`]' is missing for array");
+                        A_FATAL("`]' is missing for array");
                     }
 
                     if (curfunc < 0) {
@@ -383,7 +360,7 @@ static void _parse1(A_State *As) {
                     } else {
                         A_Func *f = _get_func_byidx(As, curfunc);
                         if (f == NULL) {
-                            FATAL("func not found");
+                            A_FATAL("func not found");
                         }
                         _add_symbol(As, id, n, curfunc, -2 - f->local);
                         f->local += n;
@@ -398,7 +375,7 @@ static void _parse1(A_State *As) {
                         A_Func *f = _get_func_byidx(As, curfunc);
                         if (f == NULL) {
                             printf("curfunc: %d\n", curfunc);
-                            FATAL("func not found");
+                            A_FATAL("func not found");
                         }
                         _add_symbol(As, id, 1, curfunc, -2 - f->local);
                         f->local += 1;
@@ -411,16 +388,16 @@ static void _parse1(A_State *As) {
             }
             case A_TT_FUNC: {
                 if (curfunc > 0) {
-                    FATAL("nested func is not allowed");
+                    A_FATAL("nested func is not allowed");
                 }
                 if (A_nexttoken(As) != A_TT_IDENT) {
-                    FATAL("func missing ident");
+                    A_FATAL("func missing ident");
                 }
                 char *name = strdup(As->curtoken.u.s);
 
                 while (A_nexttoken(As) == A_TT_NEWLINE) {}
                 if (As->curtoken.t != A_TT_OPEN_BRACE) {
-                    FATAL("func expects `{'");
+                    A_FATAL("func expects `{'");
                 }
                 curfunc = _add_func(As, name, As->instr->count, 0, 0);
                 if (strcmp("_Main", name) == 0) {
@@ -431,28 +408,136 @@ static void _parse1(A_State *As) {
             }
             case A_TT_PARAM: {
                 if (curfunc < 0) {
-                    FATAL("param in global scope is not allowed");
+                    A_FATAL("param in global scope is not allowed");
                 }
                 if (A_nexttoken(As) != A_TT_IDENT) {
-                    FATAL("param expects ident");
+                    A_FATAL("param expects ident");
                 }
-                // add to symbol table in the second pass due to lack of function local count
                 break;
             }
             case A_TT_EOT: {
                 if (curfunc > 0) {
-                    FATAL("func not completed");
+                    A_FATAL("func not completed");
                 }
                 return;
             }
             default: {
-                FATAL("syntax error");
+                A_FATAL("syntax error");
             }
         }
     }
 }
 
-static void _parse2(A_State *As) {}
+static void _parse2(A_State *As) {
+    int curfunc = -1;
+    for (;;) {
+        A_TokenType t = A_nexttoken(As);
+        switch (t) {
+            case A_TT_IDENT: {
+                A_nexttoken(As);
+                break;
+            }
+            case A_TT_CLOSE_BRACE: {
+                A_Opcode *ret = _getop(As, "RET");
+                if (ret == NULL) {
+                    A_FATAL("op `ret' not defined");
+                }
+                _add_instr(As, ret->code, NULL);
+                curfunc = -1;
+                break;
+            }
+            case A_TT_NEWLINE: {
+                break;
+            }
+            case A_TT_INSTR: {
+                A_Opcode *op = _getop(As, As->curtoken.u.s);
+                list *operands = list_new();
+                for (int i = 0; i < op->param; ++i) {
+                    A_nexttoken(As);
+                    int flag = op->opflags[i];
+                    A_InstrOperand *iop = _genoperand(As, flag, curfunc);
+                    if (iop == NULL) {
+                        printf("line %d: op %s param %d, type %d, flag %d, func %d\n",
+                            As->curline, op->name, i, As->curtoken.t, flag, curfunc);
+                        A_FATAL("instr operand type error");
+                    }
+
+                    if (As->curtoken.t == A_TT_IDENT) {
+                        A_Symbol *smb = _get_symbol(As, As->curtoken.u.s, curfunc);
+                        if (smb == NULL) {
+                            smb = _get_symbol(As, As->curtoken.u.s, -1);
+                        }
+                        if (smb != NULL && smb->size > 1) {
+                            if (A_nexttoken(As) != A_TT_OPEN_BRACKET) {
+                                A_FATAL("missing `['");
+                            }
+                            if (A_nexttoken(As) != A_TT_INT) {
+                                A_FATAL("expected int");
+                            }
+                            int n = As->curtoken.u.n;
+                            if (A_nexttoken(As) != A_TT_CLOSE_BRACKET) {
+                                A_FATAL("missing `]'");
+                            }
+
+                            if (iop->u.n >= 0) {
+                                iop->u.n += n;
+                            } else {
+                                iop->u.n -= n;
+                            }
+                        }
+                    }
+
+                    list_pushback(operands, iop);
+
+                    if (i != op->param - 1) {
+                        if (A_nexttoken(As) != A_TT_COMMA) {
+                            A_FATAL("missing `,' for instr params");
+                        }
+                    }
+                }
+                _add_instr(As, op->code, operands);
+                break;
+            }
+            case A_TT_SETSTACKSIZE: {
+                A_nexttoken(As);
+                break;
+            }
+
+            case A_TT_VAR: {
+                A_nexttoken(As);
+                if (A_nexttoken(As) == A_TT_OPEN_BRACKET) {
+                    A_nexttoken(As);
+                    A_nexttoken(As);
+                } else {
+                    A_cachenexttoken(As);
+                }
+                break;
+            }
+            case A_TT_FUNC: {
+                A_nexttoken(As);
+                char *name = strdup(As->curtoken.u.s);
+                while (A_nexttoken(As) == A_TT_NEWLINE) {}
+                A_Func *fn = _get_func(As, name);
+                curfunc = fn->idx;
+                free(name);
+                break;
+            }
+            case A_TT_PARAM: {
+                A_nexttoken(As);
+                A_Func *fn = _get_func_byidx(As, curfunc);
+                _add_symbol(As, As->curtoken.u.s, 1, curfunc, -2 - fn->local - fn->param);
+                ++fn->param;
+                break;
+            }
+            case A_TT_EOT: {
+                return;
+            }
+            default: {
+                A_FATAL("syntax error");
+            }
+        }
+    }
+}
 
 void A_parse(A_State *As) {
     _parse1(As);
@@ -536,7 +621,7 @@ static int _get_apiidx(A_State *As, const char *s) {
 
 static int _add_func(A_State *As, const char *name, int entry, int param, int local) {
     if (_get_func(As, name) != NULL) {
-        FATAL("func name exists");
+        A_FATAL("func name exists");
     }
     A_Func *f = (A_Func*)malloc(sizeof(*f));
     strncpy(f->name, name, A_MAX_FUNC_NAME);
@@ -580,7 +665,7 @@ static void _initops(A_State *As) {
     for (int i = 0; i < sizeof(_opnames) / sizeof(char*); ++i) {
         const char* name = _opnames[i];
         if (_getop(As, name) != NULL) {
-            FATAL("op already exist");
+            A_FATAL("op already exist");
         }
         int *cfg = _opcfg[i];
         A_Opcode *op = _newop(name, i, cfg[0]);
@@ -588,7 +673,7 @@ static void _initops(A_State *As) {
             if (j >= op->param) {
                 break;
             }
-            _setopflag(op, j, cfg[1 + j]);
+            _setopflag(As, op, j, cfg[1 + j]);
         }
         list_pushback(As->opcodes, op);
     }
@@ -606,9 +691,9 @@ static A_Opcode* _newop(const char* name, int code, int param) {
     return op;
 }
 
-static void _setopflag(A_Opcode *op, int idx, int flag) {
+static void _setopflag(A_State *As, A_Opcode *op, int idx, int flag) {
     if (op->param <= idx) {
-        FATAL("too many opflags");
+        A_FATAL("too many opflags");
     }
     op->opflags[idx] = flag;
 }
@@ -625,7 +710,7 @@ static A_Opcode* _getop(A_State *As, const char *name) {
 
 static int _add_symbol(A_State *As, const char *name, int size, int func, int stack) {
     if (_get_symbol(As, name, func) != NULL) {
-        FATAL("symbol exists");
+        A_FATAL("symbol exists");
     }
     A_Symbol *s = (A_Symbol*)malloc(sizeof(*s));
     strcpy(s->name, name);
@@ -637,7 +722,7 @@ static int _add_symbol(A_State *As, const char *name, int size, int func, int st
 
 static int _add_label(A_State *As, const char *name, int func, int instr) {
     if (_get_label(As, name, func) != NULL) {
-        FATAL("label exists");
+        A_FATAL("label exists");
     }
     A_Label *l = (A_Label*)malloc(sizeof(*l));
     strcpy(l->name, name);
@@ -693,6 +778,9 @@ static A_InstrOperand* _genoperand(A_State *As, int flag, int funcidx) {
             char *s = As->curtoken.u.s;
 
             A_Symbol *smb = _get_symbol(As, s, funcidx);
+            if (smb == NULL) {
+                smb = _get_symbol(As, s, -1);
+            }
             if (smb != NULL) {
                 mask = A_OTM_MEM;
                 io->type = smb->stack > 0 ? A_OT_ABS_SIDX : A_OT_REL_SIDX;
@@ -715,7 +803,6 @@ static A_InstrOperand* _genoperand(A_State *As, int flag, int funcidx) {
                 io->u.n = fn->idx;
                 break;
             }
-
 
             int apiidx = _get_apiidx(As, s);
             if (apiidx >= 0) {
