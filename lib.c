@@ -10,7 +10,7 @@ void fatal(const char *func, int line, char *msg) {
 
 void snapshot(const char* code, int pos) {
     int begin, end;
-    for (begin = pos; begin > 0; --begin) {
+    for (begin = pos - 1; begin > 0; --begin) {
         if (code[begin] == '\n') {
             ++begin;
             break;
