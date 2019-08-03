@@ -325,9 +325,9 @@ static void _parse1(A_State *As) {
                     int flag = op->opflags[i];
                     A_InstrOperand *iop = _genoperand(As, flag, curfunc);
                     if (iop == NULL) {
-                        int begin = As->curidx >= 8 ? As->curidx - 8 : 0;
-                        char *codesnap = strndup(As->program + begin, 16);
-                        printf("'''\n%s\n'''\n", codesnap);
+                        const char *snap = snapshot(As->program, As->curidx, 32);
+                        printf("'''\n%s\n'''\n", snap);
+                        free((void*)snap);
                         printf("line %d: op %s param %d, type %d, flag %d, func %d\n", As->curline, 
                             op->name, i, As->curtoken.t, flag, curfunc);
                         FATAL("instr operand type error");
