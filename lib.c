@@ -7,6 +7,3 @@ void fatal(const char *func, int line, char *msg) {
     exit(-1);
 }
 
-void info(const char *func, int line, char *msg) {
-    printf("%s:%d: %s\n", func, line, msg);
-}

@@ -22,30 +22,13 @@ int main(int argc, char **argv) {
     fread(source, sizeof(char), fsize, f);
     fclose(f); f = NULL;
 
-    A_State *S = A_newstate(source);
+    A_State *As = A_newstate(source);
     free(source);
 
-    for (;;) {
-        A_TokenType t = A_nexttoken(S);
-        printf("<%d: ", t);
-        if (t == A_TT_EOT) {
-            printf("EOT>\n");
-            break;
-        }
-        if (t == A_TT_NEWLINE) {
-            printf("NL>\n");
-        } else if (t == A_TT_INT) {
-            printf("%d> ", S->curtoken.u.n);
-        } else if (t == A_TT_FLOAT) {
-            printf("%f> ", S->curtoken.u.f);
-        } else if (t == A_TT_STRING || t == A_TT_IDENT) {
-            printf("%s> ", S->curtoken.u.s);
-        } else {
-            printf(">");
-        }
-    }
+    A_parse(As);
+    A_createbin(As);
 
-    A_freestate(S);
+    A_freestate(As);
 
     return 0;
 }

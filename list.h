@@ -12,10 +12,8 @@ typedef struct _list {
     int count;
 } list;
 
-lnode* list_newnode(void *data);
-
 list* list_new();
 void list_free(list *l);
-void list_pushback(list *l, lnode *n);
+int list_pushback(list *l, void *data);
 
 #endif
