@@ -2,14 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xasm.h"
+#include "xvm.h"
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        printf("%s filename\n", argv[0]);
-        exit(-1);
-    }
-    FILE *f = fopen(argv[1], "r");
-    if (!f) {
+void usage(const char* pname) {
+    printf("compile: %s -c filename\nrun: %s -r filename\n", pname, pname);
+}
+
+void compile(const char* filename) {
+    FILE *f = fopen(filename, "r");
+    if (f == NULL) {
         perror("Open file failed");
         exit(-1);
     }
@@ -29,6 +30,45 @@ int main(int argc, char **argv) {
     A_createbin(As);
 
     A_freestate(As);
+}
+
+void run(const char* filename) {
+    FILE *f = fopen(filename, "rb");
+    if (f == NULL) {
+        perror("Open file failed");
+        exit(-1);
+    }
+
+    V_State *Vs = V_newstate();
+    int loaded = V_load(Vs, f);
+    if (!loaded) {
+        printf("[x] V_load failed\n");
+        fclose(f); f = NULL;
+        V_freestate(Vs);
+        exit(-1);
+    }
+    fclose(f); f = NULL;
+    V_run(Vs);
+    V_freestate(Vs);
+}
+
+int main(int argc, const char **argv) {
+    const char* pname = argv[0];
+    if (argc != 3) {
+        usage(pname);
+        exit(-1);
+    }
+
+    const char *opt = argv[1];
+    const char *filename = argv[2];
+    if (strcmp(opt, "-c") == 0) {
+        compile(filename);
+    } else if (strcmp(opt, "-r") == 0) {
+        run(filename);
+    } else {
+        usage(pname);
+        exit(-1);
+    }
 
     return 0;
 }

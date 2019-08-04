@@ -8,10 +8,6 @@
 
 #define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); fatal(__FUNCTION__, __LINE__, msg)
 
-static const char *_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
-    "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
-    "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
-    "CALLHOST", "PAUSE", "EXIT"};
 static int _opcfg[][4] = {
     /*
     param   flag1   flag2   flag3
@@ -408,7 +404,7 @@ static void _pass1(A_State *As) {
                 if (As->curtoken.t != A_TT_OPEN_BRACE) {
                     A_FATAL("func expects `{'");
                 }
-                curfunc = _add_func(As, name, As->instr->count, 0, 0);
+                curfunc = _add_func(As, name, 0, 0, 0);
                 if (strcmp("_Main", name) == 0) {
                     As->mh.mainidx = curfunc;
                 }
@@ -503,6 +499,7 @@ static void _pass2(A_State *As) {
                 char *name = strdup(As->curtoken.u.s);
                 while (A_nexttoken(As) == A_TT_NEWLINE) {}
                 A_Func *fn = _get_func(As, name);
+                fn->entry = As->instr->count;
                 curfunc = fn->idx;
                 free(name);
                 break;

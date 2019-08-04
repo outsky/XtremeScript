@@ -14,6 +14,11 @@
 #define A_MAX_SYMBOL_NAME 32
 #define A_MAX_LABEL_NAME 32
 
+static const char *_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
+    "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
+    "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
+    "CALLHOST", "PAUSE", "EXIT"};
+
 typedef enum {
     A_TT_INT,
     A_TT_FLOAT,

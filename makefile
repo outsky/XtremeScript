@@ -1,5 +1,8 @@
-xs: list.o main.o xasm.o lib.o
-	cc -g -o xs.out list.o main.o xasm.o lib.o
+xs: list.o main.o xasm.o lib.o xvm.o
+	cc -g -o xs.out list.o main.o xasm.o lib.o xvm.o
+
+xvm.o: xvm.h xvm.c
+	cc -g -c xvm.c
 
 lib.o: lib.h lib.c
 	cc -g -c lib.c
@@ -14,4 +17,4 @@ main.o: main.c
 	cc -g -c main.c
 
 clean:
-	rm -f *.o
+	rm -f *.o xs.out
