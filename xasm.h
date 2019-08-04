@@ -133,6 +133,7 @@ typedef struct {
         int n;
         double f;
     } u;
+    int idx;    // for A_OT_ABS_SIDX and A_OT_REL_SIDX
 } A_InstrOperand;
 
 A_State* A_newstate(char *program);

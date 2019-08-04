@@ -471,47 +471,7 @@ static void _pass2(A_State *As) {
                             As->curline, op->name, i, As->curtoken.t, flag, curfunc);
                         A_FATAL("instr operand type error");
                     }
-
-                    if (As->curtoken.t == A_TT_IDENT) {
-                        A_Symbol *smb = _get_symbol(As, As->curtoken.u.s, curfunc);
-                        if (smb == NULL) {
-                            smb = _get_symbol(As, As->curtoken.u.s, -1);
-                        }
-                        if (smb != NULL && smb->size > 1) {
-                            if (A_nexttoken(As) != A_TT_OPEN_BRACKET) {
-                                A_FATAL("missing `['");
-                            }
-
-                            int tt = A_nexttoken(As);
-                            int n = 0;
-                            if (tt == A_TT_INT) {
-                                n = As->curtoken.u.n;
-                            } else if(tt == A_TT_IDENT) {
-                                A_Symbol *sidx = _get_symbol(As, As->curtoken.u.s, curfunc);
-                                if (sidx == NULL) {
-                                    sidx = _get_symbol(As, As->curtoken.u.s, -1);
-                                }
-                                if (sidx == NULL) {
-                                    A_FATAL("undefined ident");
-                                }
-
-                                // TODO: var index
-
-                            } else {
-                                A_FATAL("expected int or ident");
-                            }
-                            if (A_nexttoken(As) != A_TT_CLOSE_BRACKET) {
-                                A_FATAL("missing `]'");
-                            }
-
-                            if (iop->u.n >= 0) {
-                                iop->u.n += n;
-                            } else {
-                                iop->u.n -= n;
-                            }
-                        }
-                    }
-
+ 
                     list_pushback(operands, iop);
 
                     if (i != op->param - 1) {
@@ -600,7 +560,10 @@ void A_createbin(A_State *As) {
         for (lnode *o = i->operands->head; o != NULL; o = o->next) {
             A_InstrOperand *io = (A_InstrOperand*)o->data;
             fwrite(&io->type, 1, 1, f);
-            if (io->type == A_OT_FLOAT) {
+            if (io->type == A_OT_ABS_SIDX || io->type == A_OT_REL_SIDX) {
+                fwrite(&io->u.n, sizeof(&io->u.n), 1, f);
+                fwrite(&io->idx, sizeof(&io->idx), 1, f);
+            } else if (io->type == A_OT_FLOAT) {
                 fwrite(&io->u.f, sizeof(io->u.f), 1, f);
             } else {
                 fwrite(&io->u.n, sizeof(io->u.n), 1, f);
@@ -869,8 +832,38 @@ static A_InstrOperand* _genoperand(A_State *As, int flag, int funcidx) {
             }
             if (smb != NULL) {
                 mask = A_OTM_MEM;
-                io->type = smb->stack > 0 ? A_OT_ABS_SIDX : A_OT_REL_SIDX;
+                io->type = A_OT_ABS_SIDX;
                 io->u.n = smb->stack;
+                io->idx = 0;
+
+                if (smb->size > 1) {
+                    if (A_nexttoken(As) != A_TT_OPEN_BRACKET) {
+                        A_FATAL("missing `['");
+                    }
+
+                    int tt = A_nexttoken(As);
+                    if (tt == A_TT_INT) {
+                        io->idx = As->curtoken.u.n;
+                    } else if(tt == A_TT_IDENT) {
+                        A_Symbol *sidx = _get_symbol(As, As->curtoken.u.s, funcidx);
+                        if (sidx == NULL) {
+                            sidx = _get_symbol(As, As->curtoken.u.s, -1);
+                        }
+                        if (sidx == NULL) {
+                            A_FATAL("undefined ident");
+                        }
+                        if (sidx->size != 1) {
+                            A_FATAL("expected int or var");
+                        }
+
+                        io->idx = sidx->stack;
+                    } else {
+                        A_FATAL("expected int or ident");
+                    }
+                    if (A_nexttoken(As) != A_TT_CLOSE_BRACKET) {
+                        A_FATAL("missing `]'");
+                    }
+                }
                 break;
             }
 
