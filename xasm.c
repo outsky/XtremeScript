@@ -442,7 +442,8 @@ static void _parse2(A_State *As) {
                 if (ret == NULL) {
                     A_FATAL("op `ret' not defined");
                 }
-                _add_instr(As, ret->code, NULL);
+                list *operands = list_new();
+                _add_instr(As, ret->code, operands);
                 curfunc = -1;
                 break;
             }
@@ -582,6 +583,68 @@ void A_createbin(A_State *As) {
     for (lnode *n = As->api->head; n != NULL; n = n->next) {
         printf("%s\n", (const char*)n->data);
     }
+
+    FILE *f = fopen("a.xse", "wb");
+
+    int num = 0;
+    // header
+    fwrite(A_ID, 1, 4, f);
+    num = A_VERSION_MAJOR;
+    fwrite(&num, 1, 1, f);
+    num = A_VERSION_MINOR;
+    fwrite(&num, 1, 1, f);
+    fwrite(&As->mh.stacksize, 4, 1, f);
+    fwrite(&As->mh.globalsize, 4, 1, f);
+    num = As->mh.mainidx >= 0 ? 1 : 0;
+    fwrite(&num, 1, 1, f);
+    fwrite(&As->mh.mainidx, 4, 1, f);
+
+    // instruction stream
+    fwrite(&As->instr->count, 4, 1, f);
+    for (lnode *n = As->instr->head; n != NULL; n = n->next) {
+        A_Instr *i = (A_Instr*)n->data;
+        fwrite(&i->opcode, 2, 1, f);
+        num = _opcfg[i->opcode][0];
+        fwrite(&num, 1, 1, f);
+        for (lnode *o = i->operands->head; o != NULL; o = o->next) {
+            A_InstrOperand *io = (A_InstrOperand*)o->data;
+            fwrite(&io->type, 1, 1, f);
+            if (io->type == A_OT_FLOAT) {
+                fwrite(&io->u.f, sizeof(io->u.f), 1, f);
+            } else {
+                fwrite(&io->u.n, sizeof(io->u.n), 1, f);
+            }
+        }
+    }
+
+    // string table
+    fwrite(&As->str->count, 4, 1, f);
+    for (lnode *n = As->str->head; n != NULL; n = n->next) {
+        char *s = (char*)n->data;
+        num = strlen(s);
+        fwrite(&num, 4, 1, f);
+        fwrite(s, 1, num, f);
+    }
+
+    // function table
+    fwrite(&As->func->count, 4, 1, f);
+    for (lnode *n = As->func->head; n != NULL; n = n->next) {
+        A_Func *fn = (A_Func*)n->data;
+        fwrite(&fn->entry, 4, 1, f);
+        fwrite(&fn->param, 1, 1, f);
+        fwrite(&fn->local, 4, 1, f);
+    }
+
+    // api table
+    fwrite(&As->api->count, 4, 1, f);
+    for (lnode *n = As->api->head; n != NULL; n = n->next) {
+        char *s = (char*)n->data;
+        num = strlen(s);
+        fwrite(&num, 1, 1, f);
+        fwrite(s, 1, num, f);
+    }
+
+    fclose(f);
 }
 
 static int _add_str(A_State *As, const char *s) {
