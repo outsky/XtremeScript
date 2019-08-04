@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "lib.h"
 
 void fatal(const char *func, int line, char *msg) {
@@ -27,7 +28,11 @@ void snapshot(const char* code, int pos) {
     printf("'''\n%s\n", snap);
     free(snap);
     for (int i = begin; i < end + 1; ++i) {
-        printf("%c", i == pos - 1 ? '^' : ' ');
+        if (i == pos - 1) {
+            printf("^");
+        } else {
+            printf("%c", isblank(code[i]) ? code[i] : ' ');
+        }
     }
     printf("\n'''\n");
 }
