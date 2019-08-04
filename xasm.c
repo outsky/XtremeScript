@@ -274,7 +274,7 @@ A_TokenType A_nexttoken(A_State *As) {
     }
 }
 
-static void _parse1(A_State *As) {
+static void _pass1(A_State *As) {
     int stacksizeflag = 0;
     int curfunc = -1;
     for (;;) {
@@ -428,7 +428,7 @@ static void _parse1(A_State *As) {
     }
 }
 
-static void _parse2(A_State *As) {
+static void _pass2(A_State *As) {
     int curfunc = -1;
     for (;;) {
         A_TokenType t = A_nexttoken(As);
@@ -541,9 +541,9 @@ static void _parse2(A_State *As) {
 }
 
 void A_parse(A_State *As) {
-    _parse1(As);
+    _pass1(As);
     A_resetstate(As);
-    _parse2(As);
+    _pass2(As);
 }
 
 void A_createbin(A_State *As) {
