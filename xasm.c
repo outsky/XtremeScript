@@ -6,7 +6,7 @@
 #include "xasm.h"
 #include "lib.h"
 
-#define A_FATAL(msg) snapshot(As->program, As->curidx); fatal(__FUNCTION__, __LINE__, msg)
+#define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); fatal(__FUNCTION__, __LINE__, msg)
 
 static const char *_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
     "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
@@ -36,17 +36,17 @@ static int _opcfg[][4] = {
     {3,      A_OTM_REG, A_OTM_STRING, A_OTM_INT}, // GETCHAR dest, src, index
     {3,      A_OTM_INT, A_OTM_REG, A_OTM_STRING}, // SETCHAR index, dest, src
     {1,      A_OTM_LABEL, 0, 0}, // JMP label
-    {3,      A_OTM_MEM, A_OTM_MEM, A_OTM_LABEL}, // JE  op0, op1, label
-    {3,      A_OTM_MEM, A_OTM_MEM, A_OTM_LABEL}, // JNE op0, op1, label
-    {3,      A_OTM_MEM, A_OTM_MEM, A_OTM_LABEL}, // JG  op0, op1, label
-    {3,      A_OTM_MEM, A_OTM_MEM, A_OTM_LABEL}, // JL  op0, op1, label
-    {3,      A_OTM_MEM, A_OTM_MEM, A_OTM_LABEL}, // JGE op0, op1, label
-    {3,      A_OTM_MEM, A_OTM_MEM, A_OTM_LABEL}, // JLE op0, op1, label
+    {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JE  op0, op1, label
+    {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JNE op0, op1, label
+    {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JG  op0, op1, label
+    {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JL  op0, op1, label
+    {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JGE op0, op1, label
+    {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JLE op0, op1, label
     {1,      A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM, 0, 0}, // PUSH src
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // POP  dest
     {1,      A_OTM_FUNC, 0, 0}, // CALL funcname
     {0,      0, 0, 0}, // RET
-    {1,      A_OTM_FUNC, 0, 0}, // CALLHOST funcname
+    {1,      A_OTM_API, 0, 0}, // CALLHOST funcname
     {1,      A_OTM_INT | A_OTM_MEM, 0, 0}, // PAUSE duration
     {1,      A_OTM_INT, 0, 0}, // EXIT  code
 };
@@ -146,7 +146,7 @@ A_TokenType A_nexttoken(A_State *As) {
         char c = As->program[As->curidx++];
         switch (ls) {
             case A_LS_INIT: {
-                if (isblank(c))  {
+                if (c == '\r' || isblank(c))  {
                     break;
                 }
 
@@ -181,6 +181,7 @@ A_TokenType A_nexttoken(A_State *As) {
                 if (c == '}') {As->curtoken.t = A_TT_CLOSE_BRACE; return A_TT_CLOSE_BRACE;}
                 if (c == '\n') {As->curtoken.t = A_TT_NEWLINE; ++As->curline; return A_TT_NEWLINE;}
 
+                printf("%c(%d)\n", c, c);
                 A_FATAL("invalid char");
             }
             case A_LS_INT: {
@@ -193,7 +194,7 @@ A_TokenType A_nexttoken(A_State *As) {
                     break;
                 }
 
-                if (c == ']' || isspace(c)) {
+                if (c == ']' || c == ',' || isspace(c)) {
                     --As->curidx;
                     As->curtoken.t = A_TT_INT;
                     char *tmp = strndup(As->program + begin, As->curidx - begin);
@@ -316,6 +317,14 @@ static void _pass1(A_State *As) {
                 if (op == NULL) {
                     A_FATAL("op not registered");
                 }
+
+                if (strcasecmp(op->name, "CALLHOST") == 0) {
+                    if (A_nexttoken(As) != A_TT_IDENT) {
+                        A_FATAL("ident expected");
+                    }
+                    _add_api(As, As->curtoken.u.s);
+                }
+
                 while (A_nexttoken(As) != A_TT_NEWLINE) {}
                 A_cachenexttoken(As);
                 break;
@@ -472,10 +481,25 @@ static void _pass2(A_State *As) {
                             if (A_nexttoken(As) != A_TT_OPEN_BRACKET) {
                                 A_FATAL("missing `['");
                             }
-                            if (A_nexttoken(As) != A_TT_INT) {
-                                A_FATAL("expected int");
+
+                            int tt = A_nexttoken(As);
+                            int n = 0;
+                            if (tt == A_TT_INT) {
+                                n = As->curtoken.u.n;
+                            } else if(tt == A_TT_IDENT) {
+                                A_Symbol *sidx = _get_symbol(As, As->curtoken.u.s, curfunc);
+                                if (sidx == NULL) {
+                                    sidx = _get_symbol(As, As->curtoken.u.s, -1);
+                                }
+                                if (sidx == NULL) {
+                                    A_FATAL("undefined ident");
+                                }
+
+                                // TODO: var index
+
+                            } else {
+                                A_FATAL("expected int or ident");
                             }
-                            int n = As->curtoken.u.n;
                             if (A_nexttoken(As) != A_TT_CLOSE_BRACKET) {
                                 A_FATAL("missing `]'");
                             }
@@ -541,50 +565,17 @@ static void _pass2(A_State *As) {
 }
 
 void A_parse(A_State *As) {
+    printf("XASM\nXtremeScript Assembler Version %d.%d\nWritten by Outsky\n\nAssembling...\n\n",
+        A_VERSION_MAJOR, A_VERSION_MINOR);
+
     _pass1(As);
     A_resetstate(As);
     _pass2(As);
 }
 
 void A_createbin(A_State *As) {
-    printf("-----symbols----\n");
-    for (lnode *n = As->symbols->head; n != NULL; n = n->next) {
-        A_Symbol *s = (A_Symbol*)n->data;
-        printf("%s: size %d, func %d, stack %d\n", s->name, s->size, s->func, s->stack);
-    }
-
-    printf("\n-----labels----\n");
-    for (lnode *n = As->labels->head; n != NULL; n = n->next) {
-        A_Label *l = (A_Label*)n->data;
-        printf("%s: func %d, instr %d\n", l->name, l->func, l->instr);
-    }
-
-    printf("\n-----header-----\n");
-    printf("stacksize: %d\nglobalsize:%d\nmainidx:%d\n", As->mh.stacksize, As->mh.globalsize, As->mh.mainidx);
-
-    printf("\n-----instr----\n");
-    for (lnode *n = As->instr->head; n != NULL; n = n->next) {
-        A_Instr *i = (A_Instr*)n->data;
-        printf("%d(%s)\n", i->opcode, _opnames[i->opcode]);
-    }
-
-    printf("\n-----str----\n");
-    for (lnode *n = As->str->head; n != NULL; n = n->next) {
-        printf("%s\n", (const char*)n->data);
-    }
-
-    printf("\n-----func----\n");
-    for (lnode *n = As->func->head; n != NULL; n = n->next) {
-        A_Func *f = (A_Func*)n->data;
-        printf("%s: entry %d, param %d, local %d\n", f->name, f->entry, f->param, f->local);
-    }
-
-    printf("\n-----api----\n");
-    for (lnode *n = As->api->head; n != NULL; n = n->next) {
-        printf("%s\n", (const char*)n->data);
-    }
-
-    FILE *f = fopen("a.xse", "wb");
+    const char *fname = "a.xse";
+    FILE *f = fopen(fname, "wb");
 
     int num = 0;
     // header
@@ -645,6 +636,34 @@ void A_createbin(A_State *As) {
     }
 
     fclose(f);
+
+    int varcount = 0;
+    int arrcount = 0;
+    for (lnode *n = As->symbols->head; n != NULL; n = n->next) {
+        A_Symbol *sb = (A_Symbol*)n->data;
+        if (sb->size == 1) {
+            ++varcount;
+        } else {
+            ++arrcount;
+        }
+    }
+
+    printf("%s created successfully!\n\n", fname);
+    printf("Source Lines Processed: %d\n", As->curline);
+    printf("Stack Size: %d\n", As->mh.stacksize);
+    printf("Instructions Assembled: %d\n", As->instr->count);
+    printf("Variables: %d\n", varcount);
+    printf("Arrays: %d\n", arrcount);
+    printf("Globals: %d\n", As->mh.globalsize);
+    printf("String Literals: %d\n", As->str->count);
+    printf("Labels: %d\n", As->labels->count);
+    printf("Host API Calls: %d\n", As->api->count);
+    printf("Functions: %d\n", As->func->count);
+    printf("_Main() Present: %s", As->mh.mainidx >= 0 ? "YES" : "No");
+    if (As->mh.mainidx >= 0) {
+        printf(" (Index %d)", As->mh.mainidx);
+    }
+    printf("\n");
 }
 
 static int _add_str(A_State *As, const char *s) {
@@ -667,6 +686,10 @@ static int _get_stridx(A_State *As, const char *s) {
 }
 
 static int _add_api(A_State *As, const char *s) {
+    int idx = _get_apiidx(As, s);
+    if (idx >= 0) {
+        return idx;
+    }
     return list_pushback(As->api, (void*)s);
 }
 
