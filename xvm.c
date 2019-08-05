@@ -113,7 +113,6 @@ int V_load(V_State *Vs, FILE *f) {
         fread(&fn->entry, 4, 1, f);
         fread(&fn->param, 1, 1, f);
         fread(&fn->local, 4, 1, f);
-        fn->stack = 0;
     }
 
     // api

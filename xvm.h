@@ -37,7 +37,6 @@ typedef struct {
     int entry;
     int param;
     int local;
-    int stack;
 } V_Func;
 
 typedef struct {
