@@ -19,12 +19,12 @@ static int _opcfg[][4] = {
     param   flag1   flag2   flag3
     */
     {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM | A_OTM_REG, 0}, // MOV dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // ADD dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // SUB dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // MUL dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // DIV dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // MOD dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM,  0}, // EXP dest, power
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM | A_OTM_REG,  0}, // ADD dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM | A_OTM_REG,  0}, // SUB dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM | A_OTM_REG,  0}, // MUL dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM | A_OTM_REG,  0}, // DIV dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM | A_OTM_REG,  0}, // MOD dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM | A_OTM_REG,  0}, // EXP dest, power
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // NEG dest
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // INC dest
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // DEC dest

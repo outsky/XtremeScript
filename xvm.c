@@ -7,7 +7,7 @@
 
 /* static function declarations */
 static void _pvalue(const V_Value *v);
-static void _pstack(V_State *Vs);
+static void _pstatus(V_State *Vs);
 
 static void _reset(V_State *Vs);
 static void _copy(V_Value *dest, const V_Value *src);
@@ -61,13 +61,15 @@ static void _pvalue(const V_Value *v) {
         } break;
     }
 }
-static void _pstack(V_State *Vs) {
+static void _pstatus(V_State *Vs) {
+    printf("\t<"); _pvalue(&Vs->ret); printf(">\n");
     for (int i = Vs->stack.top - 2; i >= 0; --i) {
-        printf("%d\t", i); _pvalue(&Vs->stack.nodes[i]); printf("\n");
+        printf("\t%d\t", i); _pvalue(&Vs->stack.nodes[i]); printf("\n");
     }
 }
 
 static void _reset(V_State *Vs) {
+    Vs->ret.type = A_OT_NULL;
     Vs->stack.nodes = (V_Value*)malloc(sizeof(V_Value) * Vs->stack.size);
     for (int i = 0; i < Vs->stack.size; ++i) {
         Vs->stack.nodes[i].type = A_OT_NULL;
@@ -298,15 +300,32 @@ void V_run(V_State *Vs) {
         const V_Instr *ins = Vs->instr.instr + ip;
         switch (ins->opcode) {
             case A_OP_MOV: {
-                printf("\nMOV: ");
+                printf("MOV: ");
                 V_Value *dest = _getopvalue(Vs, ins, 0);
                 V_Value *src = _getopvalue(Vs, ins, 1);
                 _pvalue(&ins->ops[0]); printf(", "), _pvalue(src); printf("\n");
                 _copy(dest, src);
-                _pstack(Vs);
+                _pstatus(Vs);
             } break;
 
-            case A_OP_ADD: {}
+            case A_OP_ADD: {
+                printf("ADD: ");
+                V_Value *dest = _getopvalue(Vs, ins, 0);
+                V_Value *src = _getopvalue(Vs, ins, 1);
+                _pvalue(&ins->ops[0]); printf(", "), _pvalue(src); printf("\n");
+                if (dest->type != src->type) {
+                    fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+                }
+                if (dest->type == A_OT_INT) {
+                    dest->u.n += src->u.n;
+                } else if (dest->type == A_OT_FLOAT) {
+                    dest->u.f += src->u.f;
+                } else {
+                    fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+                }
+                _pstatus(Vs);
+            } break;
+
             case A_OP_SUB: {}
             case A_OP_MUL: {}
             case A_OP_DIV: {}
