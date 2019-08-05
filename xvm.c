@@ -30,6 +30,8 @@ void V_freestate(V_State *Vs) {
 
 int V_load(V_State *Vs, FILE *f) {
     printf("XVM\nWritten by Outsky\n\nLoading...\n\n");
+
+    // header
     char tmp[4];
     fread(tmp, 1, 4, f);
     if (strncmp(A_ID, tmp, 4) != 0) {
@@ -53,6 +55,7 @@ int V_load(V_State *Vs, FILE *f) {
         Vs->mainidx = -1;
     }
 
+    // instruction
     Vs->instr.ip = 0;
     fread(&Vs->instr.count, 4, 1, f);
     Vs->instr.instr = (V_Instr*)malloc(sizeof(V_Instr) * Vs->instr.count);
@@ -77,6 +80,7 @@ int V_load(V_State *Vs, FILE *f) {
         }
     }
 
+    // string
     n = 0;
     fread(&n, 4, 1, f);
     int sl = 0;
@@ -99,20 +103,20 @@ int V_load(V_State *Vs, FILE *f) {
         free(tmpstr);
     }
 
+    // function
     n = 0;
     fread(&n, 4, 1, f);
     Vs->func = (V_Func*)malloc(sizeof(V_Func) * n);
     memset(Vs->func, 0, sizeof(V_Func) * n);
-    printf("fncount: %d\n", n);
     for (int i = 0; i < n; ++i) {
         V_Func *fn = Vs->func + i;
         fread(&fn->entry, 4, 1, f);
-        printf("get entry: %d\n", fn->entry);
         fread(&fn->param, 1, 1, f);
         fread(&fn->local, 4, 1, f);
         fn->stack = 0;
     }
 
+    // api
     fread(&Vs->api.count, 4, 1, f);
     Vs->api.api = (char**)malloc(sizeof(char*) * Vs->api.count);
     for (int i = 0; i < Vs->api.count; ++i) {
@@ -127,16 +131,8 @@ int V_load(V_State *Vs, FILE *f) {
         return 0;
     }
 
-    if (!feof(f)) {
-        printf("load finished without getting eof\n");
-        return 0;
-    }
-
-    return 1;
-}
-
-void V_run(V_State *Vs) {
     printf("load successfully!\n\n");
+    printf("Load size: %ld\n", ftell(f));
     printf("XtremeScript VM Version %d.%d\n", Vs->major, Vs->minor);
     printf("Stack Size: %d\n", Vs->stack.size);
     printf("Instructions Assembled: %d\n", Vs->instr.count);
@@ -147,6 +143,10 @@ void V_run(V_State *Vs) {
         printf(" (Index %d)", Vs->mainidx);
     }
 
+    return 1;
+}
+
+void V_run(V_State *Vs) {
     printf("\n\nrunning...\n\n");
     if (Vs->mainidx < 0) {
         printf("No _Main(), nothing to run\n");
@@ -165,5 +165,5 @@ void V_run(V_State *Vs) {
         ++Vs->instr.ip;
     }
 
-    printf("\n\nrun successfully!\n");
+    printf("\nrun successfully!\n");
 }
