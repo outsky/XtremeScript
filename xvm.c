@@ -160,10 +160,22 @@ void V_run(V_State *Vs) {
         }
 
         V_Instr *ins = Vs->instr.instr + Vs->instr.ip;
-        printf("%d> %s %d\n", Vs->instr.ip, _opnames[ins->opcode], ins->opcount);
-
-        ++Vs->instr.ip;
+        const char *opname = _opnames[ins->opcode];
+        printf("%d> %s %d\n", Vs->instr.ip, opname, ins->opcount);
+        if (strcasecmp(opname, "CALL") == 0) {
+            V_Func *fn = Vs->func + ins->ops[0].u.n;
+            V_Value *st = Vs->stack.nodes + Vs->stack.top++;
+            st->type = A_OT_INT;
+            st->u.n = Vs->instr.ip + 1;
+            Vs->instr.ip = fn->entry;
+        } else if (strcasecmp(opname, "RET") == 0) {
+            V_Value *st = Vs->stack.nodes + --Vs->stack.top;
+            Vs->instr.ip = st->u.n;
+        } else {
+            ++Vs->instr.ip;
+        }
     }
 
     printf("\nrun successfully!\n");
 }
+
