@@ -8,6 +8,12 @@
 
 #define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); fatal(__FUNCTION__, __LINE__, msg)
 
+const char *A_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
+    "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
+    "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
+    "CALLHOST", "PAUSE", "EXIT"};
+
+
 static int _opcfg[][4] = {
     /*
     param   flag1   flag2   flag3
@@ -234,7 +240,7 @@ A_TokenType A_nexttoken(A_State *As) {
                 break;
             }
             case A_LS_IDENT: {
-                if (c == '[' || c == ',' || c == ':' || isspace(c)) {
+                if (c != '_' && !isalnum(c)) {
                     --As->curidx;
 
                     char *tmp = strndup(As->program + begin, As->curidx - begin);
@@ -710,8 +716,8 @@ static int _add_instr(A_State *As, int opcode, list *operands) {
 
 
 static void _initops(A_State *As) { 
-    for (int i = 0; i < sizeof(_opnames) / sizeof(char*); ++i) {
-        const char* name = _opnames[i];
+    for (int i = 0; i < sizeof(A_opnames) / sizeof(char*); ++i) {
+        const char* name = A_opnames[i];
         if (_getop(As, name) != NULL) {
             A_FATAL("op already exist");
         }
@@ -855,6 +861,7 @@ static A_InstrOperand* _genoperand(A_State *As, int flag, int funcidx) {
                             A_FATAL("expected int or var");
                         }
 
+                        io->type = A_OT_REL_SIDX;
                         io->idx = sidx->stack;
                     } else {
                         A_FATAL("expected int or ident");

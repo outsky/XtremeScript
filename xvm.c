@@ -4,6 +4,147 @@
 #include "xasm.h"
 #include "xvm.h"
 
+
+/* static function declarations */
+static void _pvalue(const V_Value *v);
+static void _pstack(V_State *Vs);
+
+static void _reset(V_State *Vs);
+static void _copy(V_Value *dest, const V_Value *src);
+
+// stack
+static void _push(V_State *Vs, V_Value v);
+static void _pop(V_State *Vs);
+static void _pushframe(V_State *Vs, int count);
+static void _popframe(V_State *Vs, int count);
+static V_Value* _getbyidx(V_State *Vs, int idx);
+
+// op
+static V_Value* _getopvalue(V_State *Vs, const V_Instr *ins, int idx);
+
+static V_Func* _getfunc(V_State *Vs, int idx);
+
+/* static function definations */
+static void _pvalue(const V_Value *v) {
+    switch (v->type) {
+        case A_OT_FLOAT: {
+            printf("%f", v->u.f);
+        } break;
+        case A_OT_STRING: {
+            printf("\"%s\"", v->u.s);
+        } break;
+        case A_OT_INT: {
+            printf("%d", v->u.n);
+        } break;
+        case A_OT_ABS_SIDX: {
+            if (v->u.n >= 0) {
+                printf("<abs> S[%d+%d]", v->u.n, v->idx);
+            } else {
+                printf("<abs> S[%d-%d]", v->u.n, v->idx);
+            }
+        } break;
+        case A_OT_REL_SIDX: {
+            if (v->u.n >= 0) {
+                printf("<rel> S[%d+S[%d]]", v->u.n, v->idx);
+            } else {
+                printf("<rel> S[%d-S[%d]]", v->u.n, v->idx);
+            }
+        } break;
+        case A_OT_REG: {
+            printf("_RetVal");
+        } break;
+        case A_OT_NULL: {
+            printf("Snull");
+        } break;
+        default: {
+            printf("<%d> S[%d]", v->type, v->u.n);
+        } break;
+    }
+}
+static void _pstack(V_State *Vs) {
+    for (int i = Vs->stack.top - 2; i >= 0; --i) {
+        printf("%d\t", i); _pvalue(&Vs->stack.nodes[i]); printf("\n");
+    }
+}
+
+static void _reset(V_State *Vs) {
+    Vs->stack.nodes = (V_Value*)malloc(sizeof(V_Value) * Vs->stack.size);
+    for (int i = 0; i < Vs->stack.size; ++i) {
+        Vs->stack.nodes[i].type = A_OT_NULL;
+    }
+    Vs->stack.top = 0;
+    Vs->stack.frame = 0;
+
+    _pushframe(Vs, Vs->global);
+
+    Vs->instr.ip = -1;
+    V_Func *fn = _getfunc(Vs, Vs->mainidx);
+    if (fn != NULL) {
+        Vs->instr.ip = fn->entry;
+        _pushframe(Vs, fn->local);
+        V_Value dumy;
+        dumy.type = A_OT_NULL;
+        _push(Vs, dumy);
+    }
+}
+static void _push(V_State *Vs, V_Value v) {
+    _copy(&Vs->stack.nodes[Vs->stack.top++], &v);
+}
+static void _pop(V_State *Vs) {
+    --Vs->stack.top;
+}
+static void _pushframe(V_State *Vs, int count) {
+    Vs->stack.top += count;
+}
+static void _popframe(V_State *Vs, int count) {
+    Vs->stack.top -= count;
+}
+static V_Value* _getbyidx(V_State *Vs, int idx) {
+    int absidx = idx >= 0 ? idx : Vs->stack.frame + idx;
+    return &Vs->stack.nodes[absidx];
+}
+static V_Func* _getfunc(V_State *Vs, int idx) {
+    if (idx < 0) {
+        return NULL;
+    }
+    return &Vs->func[idx];
+}
+static void _copy(V_Value *dest, const V_Value *src) {
+    if (dest->type == A_OT_STRING) {
+        free(dest->u.s);
+    }
+    *dest = *src;
+    if (dest->type == A_OT_STRING) {
+        dest->u.s = strdup(src->u.s);
+    }
+}
+static V_Value* _getopvalue(V_State *Vs, const V_Instr *ins, int idx) {
+    V_Value *v = &ins->ops[idx];
+    switch (v->type) {
+        case A_OT_ABS_SIDX: {
+            int idx = v->u.n >= 0 ? v->u.n + v->idx : v->u.n - v->idx;
+            return _getbyidx(Vs, idx);
+        }
+
+        case A_OT_REL_SIDX: {
+            V_Value *var = _getbyidx(Vs, v->idx);
+            int idx = v->u.n >= 0 ? v->u.n + var->u.n : v->u.n - var->u.n;
+            return _getbyidx(Vs, idx);
+        }
+
+        case A_OT_REG: {
+            return &Vs->ret;
+        }
+
+        default: {
+            return v;
+        }
+    }
+}
+
+
+/* none static functions */
+
 V_State* V_newstate() {
     V_State *vs = (V_State*)malloc(sizeof(*vs));
     memset(vs, 0, sizeof(*vs));
@@ -38,15 +179,9 @@ int V_load(V_State *Vs, FILE *f) {
         printf("file format not support\n");
         return 0;
     }
-
     fread(&Vs->major, 1, 1, f);
     fread(&Vs->minor, 1, 1, f);
-
     fread(&Vs->stack.size, 4, 1, f);
-    Vs->stack.nodes = (V_Value*)malloc(sizeof(V_Value) * Vs->stack.size);
-    Vs->stack.top = 0;
-    Vs->stack.frame = 0;
-
     fread(&Vs->global, 4, 1, f);
     int n = 0;
     fread(&n, 1, 1, f);
@@ -65,9 +200,9 @@ int V_load(V_State *Vs, FILE *f) {
         fread(&ins->opcode, 2, 1, f);
         fread(&ins->opcount, 1, 1, f);
         ins->ops = (V_Value*)malloc(sizeof(V_Value) * ins->opcount);
-        memset(ins->ops, 0, sizeof(V_Value) * ins->opcount);
         for (int j = 0; j < ins->opcount; ++j) {
             V_Value *v = ins->ops + j;
+            v->type = 0;
             fread(&v->type, 1, 1, f);
             if (v->type == A_OT_FLOAT) {
                 fread(&v->u.f, sizeof(v->u.f), 1, f);
@@ -152,25 +287,60 @@ void V_run(V_State *Vs) {
         return;
     }
 
-    Vs->instr.ip = Vs->func[Vs->mainidx].entry;
+    _reset(Vs);
+
     for (;;) {
-        if (Vs->instr.ip >= Vs->instr.count) {
+        int ip = Vs->instr.ip;
+        if (ip >= Vs->instr.count) {
             break;
         }
 
-        V_Instr *ins = Vs->instr.instr + Vs->instr.ip;
-        const char *opname = _opnames[ins->opcode];
-        printf("%d> %s %d\n", Vs->instr.ip, opname, ins->opcount);
-        if (strcasecmp(opname, "CALL") == 0) {
-            V_Func *fn = Vs->func + ins->ops[0].u.n;
-            V_Value *st = Vs->stack.nodes + Vs->stack.top++;
-            st->type = A_OT_INT;
-            st->u.n = Vs->instr.ip + 1;
-            Vs->instr.ip = fn->entry;
-        } else if (strcasecmp(opname, "RET") == 0) {
-            V_Value *st = Vs->stack.nodes + --Vs->stack.top;
-            Vs->instr.ip = st->u.n;
-        } else {
+        const V_Instr *ins = Vs->instr.instr + ip;
+        switch (ins->opcode) {
+            case A_OP_MOV: {
+                printf("\nMOV: ");
+                V_Value *dest = _getopvalue(Vs, ins, 0);
+                V_Value *src = _getopvalue(Vs, ins, 1);
+                _pvalue(&ins->ops[0]); printf(", "), _pvalue(src); printf("\n");
+                _copy(dest, src);
+                _pstack(Vs);
+            } break;
+
+            case A_OP_ADD: {}
+            case A_OP_SUB: {}
+            case A_OP_MUL: {}
+            case A_OP_DIV: {}
+            case A_OP_MOD: {}
+            case A_OP_EXP: {}
+            case A_OP_NEG: {}
+            case A_OP_INC: {}
+            case A_OP_DEC: {}
+            case A_OP_AND: {}
+            case A_OP_OR: {}
+            case A_OP_XOR: {}
+            case A_OP_NOT: {}
+            case A_OP_SHL: {}
+            case A_OP_SHR: {}
+            case A_OP_CONCAT: {}
+            case A_OP_GETCHAR: {}
+            case A_OP_SETCHAR: {}
+            case A_OP_JMP: {}
+            case A_OP_JE: {}
+            case A_OP_JNE: {}
+            case A_OP_JG: {}
+            case A_OP_JL: {}
+            case A_OP_JGE: {}
+            case A_OP_JLE: {}
+            case A_OP_PUSH: {}
+            case A_OP_POP: {}
+            case A_OP_CALL: {}
+            case A_OP_RET: {}
+            case A_OP_CALLHOST: {}
+            case A_OP_PAUSE: {}
+            case A_OP_EXIT: {}
+            default: {}
+        }
+        if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;
         }
     }

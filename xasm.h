@@ -14,10 +14,12 @@
 #define A_MAX_SYMBOL_NAME 32
 #define A_MAX_LABEL_NAME 32
 
-static const char *_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
-    "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
-    "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
-    "CALLHOST", "PAUSE", "EXIT"};
+extern const char *A_opnames[];
+
+typedef enum {A_OP_MOV, A_OP_ADD, A_OP_SUB, A_OP_MUL, A_OP_DIV, A_OP_MOD, A_OP_EXP, A_OP_NEG, A_OP_INC, 
+    A_OP_DEC, A_OP_AND, A_OP_OR, A_OP_XOR, A_OP_NOT, A_OP_SHL, A_OP_SHR, A_OP_CONCAT, A_OP_GETCHAR, A_OP_SETCHAR, 
+    A_OP_JMP, A_OP_JE, A_OP_JNE, A_OP_JG, A_OP_JL, A_OP_JGE, A_OP_JLE, A_OP_PUSH, A_OP_POP, A_OP_CALL, A_OP_RET, 
+    A_OP_CALLHOST, A_OP_PAUSE, A_OP_EXIT} A_OpCode;
 
 typedef enum {
     A_TT_INT,
@@ -42,6 +44,7 @@ typedef enum {
 } A_TokenType;
 
 typedef enum {
+    A_OT_NULL,
     A_OT_INT,
     A_OT_FLOAT,
     A_OT_STRING,
