@@ -27,6 +27,9 @@ static V_Func* _getfunc(V_State *Vs, int idx);
 /* static function definations */
 static void _pvalue(const V_Value *v) {
     switch (v->type) {
+        case A_OT_NULL: {
+            printf("Snull");
+        } break;
         case A_OT_FLOAT: {
             printf("%f", v->u.f);
         } break;
@@ -53,8 +56,8 @@ static void _pvalue(const V_Value *v) {
         case A_OT_REG: {
             printf("_RetVal");
         } break;
-        case A_OT_NULL: {
-            printf("Snull");
+        case A_OT_FUNCIDX: {
+            printf("Fn[%d]", v->u.n);
         } break;
         default: {
             printf("<%d> S[%d]", v->type, v->u.n);
@@ -83,10 +86,8 @@ static void _reset(V_State *Vs) {
     V_Func *fn = _getfunc(Vs, Vs->mainidx);
     if (fn != NULL) {
         Vs->instr.ip = fn->entry;
-        _pushframe(Vs, fn->local);
-        V_Value dumy;
-        dumy.type = A_OT_NULL;
-        _push(Vs, dumy);
+        _pushframe(Vs, fn->local + 1);
+        Vs->stack.frame = Vs->stack.top - 1;
     }
 }
 static void _push(V_State *Vs, V_Value v) {
@@ -326,38 +327,58 @@ void V_run(V_State *Vs) {
                 _pstatus(Vs);
             } break;
 
-            case A_OP_SUB: {}
-            case A_OP_MUL: {}
-            case A_OP_DIV: {}
-            case A_OP_MOD: {}
-            case A_OP_EXP: {}
-            case A_OP_NEG: {}
-            case A_OP_INC: {}
-            case A_OP_DEC: {}
-            case A_OP_AND: {}
-            case A_OP_OR: {}
-            case A_OP_XOR: {}
-            case A_OP_NOT: {}
-            case A_OP_SHL: {}
-            case A_OP_SHR: {}
-            case A_OP_CONCAT: {}
-            case A_OP_GETCHAR: {}
-            case A_OP_SETCHAR: {}
-            case A_OP_JMP: {}
-            case A_OP_JE: {}
-            case A_OP_JNE: {}
-            case A_OP_JG: {}
-            case A_OP_JL: {}
-            case A_OP_JGE: {}
-            case A_OP_JLE: {}
-            case A_OP_PUSH: {}
-            case A_OP_POP: {}
-            case A_OP_CALL: {}
-            case A_OP_RET: {}
-            case A_OP_CALLHOST: {}
-            case A_OP_PAUSE: {}
-            case A_OP_EXIT: {}
-            default: {}
+            case A_OP_SUB: {} break;
+            case A_OP_MUL: {} break;
+            case A_OP_DIV: {} break;
+            case A_OP_MOD: {} break;
+            case A_OP_EXP: {} break;
+            case A_OP_NEG: {} break;
+            case A_OP_INC: {} break;
+            case A_OP_DEC: {} break;
+            case A_OP_AND: {} break;
+            case A_OP_OR: {} break;
+            case A_OP_XOR: {} break;
+            case A_OP_NOT: {} break;
+            case A_OP_SHL: {} break;
+            case A_OP_SHR: {} break;
+            case A_OP_CONCAT: {} break;
+            case A_OP_GETCHAR: {} break;
+            case A_OP_SETCHAR: {} break;
+            case A_OP_JMP: {} break;
+            case A_OP_JE: {} break;
+            case A_OP_JNE: {} break;
+            case A_OP_JG: {} break;
+            case A_OP_JL: {} break;
+            case A_OP_JGE: {} break;
+            case A_OP_JLE: {} break;
+            case A_OP_PUSH: {} break;
+            case A_OP_POP: {} break;
+
+            case A_OP_CALL: {
+                printf("Call: ");
+                _pvalue(&ins->ops[0]); printf("\n");
+
+                int idx = ins->ops[0].u.n;
+                V_Func *fn = _getfunc(Vs, idx);
+                _pushframe(Vs, fn->param);
+                V_Value vret;
+                vret.type = A_OT_INT;
+                vret.u.n = Vs->instr.ip;
+                _push(Vs, vret);
+                _pushframe(Vs, fn->local);
+                V_Value vidx;
+                vidx.type = A_OT_INT;
+                vidx.u.n = idx;
+                _push(Vs, vidx);
+                Vs->stack.frame = Vs->stack.top - 1;
+                Vs->instr.ip = fn->entry;
+            } break;
+
+            case A_OP_RET: {} break;
+            case A_OP_CALLHOST: {} break;
+            case A_OP_PAUSE: {} break;
+            case A_OP_EXIT: {} break;
+            default: {} break;
         }
         if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;

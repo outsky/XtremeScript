@@ -3,13 +3,12 @@
 ; Demonstrates the basic layout of an XVM
 ; assembly-language script.
 
-setstacksize 10
+setstacksize 1024
 
 ; ---- Globals ---------------------------------------------
 
 Var GlobalVar
-Var GlobalArray[256]
-var outsky
+Var GlobalArray[4]
 
 ; ---- Functions -------------------------------------------
 
