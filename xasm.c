@@ -558,8 +558,8 @@ void A_createbin(A_State *As) {
             A_InstrOperand *io = (A_InstrOperand*)o->data;
             fwrite(&io->type, 1, 1, f);
             if (io->type == A_OT_ABS_SIDX || io->type == A_OT_REL_SIDX) {
-                fwrite(&io->u.n, sizeof(&io->u.n), 1, f);
-                fwrite(&io->idx, sizeof(&io->idx), 1, f);
+                fwrite(&io->u.n, sizeof(io->u.n), 1, f);
+                fwrite(&io->idx, sizeof(io->idx), 1, f);
             } else if (io->type == A_OT_FLOAT) {
                 fwrite(&io->u.f, sizeof(io->u.f), 1, f);
             } else {
@@ -595,6 +595,7 @@ void A_createbin(A_State *As) {
         fwrite(s, 1, num, f);
     }
 
+    long fsize = ftell(f);
     fclose(f);
 
     int varcount = 0;
@@ -609,6 +610,7 @@ void A_createbin(A_State *As) {
     }
 
     printf("%s created successfully!\n\n", fname);
+    printf("Write size: %ld\n", fsize);
     printf("Source Lines Processed: %d\n", As->curline);
     printf("Stack Size: %d\n", As->mh.stacksize);
     printf("Instructions Assembled: %d\n", As->instr->count);
