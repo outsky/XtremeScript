@@ -14,10 +14,11 @@ static void _copy(V_Value *dest, const V_Value *src);
 
 // stack
 static void _push(V_State *Vs, V_Value v);
-static void _pop(V_State *Vs);
+static const V_Value* _pop(V_State *Vs);
 static void _pushframe(V_State *Vs, int count);
 static void _popframe(V_State *Vs, int count);
 static V_Value* _getbyidx(V_State *Vs, int idx);
+static void _setbyidx(V_State *Vs, int idx, const V_Value* v);
 
 // op
 static V_Value* _getopvalue(V_State *Vs, const V_Instr *ins, int idx);
@@ -28,7 +29,7 @@ static V_Func* _getfunc(V_State *Vs, int idx);
 static void _pvalue(const V_Value *v) {
     switch (v->type) {
         case A_OT_NULL: {
-            printf("Snull");
+            printf("NULL");
         } break;
         case A_OT_FLOAT: {
             printf("%f", v->u.f);
@@ -65,9 +66,23 @@ static void _pvalue(const V_Value *v) {
     }
 }
 static void _pstatus(V_State *Vs) {
-    printf("\t<"); _pvalue(&Vs->ret); printf(">\n");
-    for (int i = Vs->stack.top - 2; i >= 0; --i) {
-        printf("\t%d\t", i); _pvalue(&Vs->stack.nodes[i]); printf("\n");
+    printf("\tIP: %d\n", Vs->instr.ip);
+    printf("\t_RetVal: < "); _pvalue(&Vs->ret); printf(" >\n");
+    for (int i = Vs->stack.top; i >= 0; --i) {
+        if (i == Vs->stack.top) {
+            if (Vs->stack.top == Vs->stack.frame) {
+                printf("\tTF->\t{ ");
+            } else {
+                printf("\tT->\t{ ");
+            }
+        } else if (i == Vs->stack.frame) {
+            printf("\tF->\t{ ");
+        } else if (i < Vs->global) {
+            printf("\tg%d\t{ ", i);
+        } else {
+            printf("\t%d\t{ ", i);
+        }
+        _pvalue(&Vs->stack.nodes[i]); printf(" }\n");
     }
 }
 
@@ -86,18 +101,22 @@ static void _reset(V_State *Vs) {
     V_Func *fn = _getfunc(Vs, Vs->mainidx);
     if (fn != NULL) {
         Vs->instr.ip = fn->entry;
-        _pushframe(Vs, fn->local + 1);
-        Vs->stack.frame = Vs->stack.top - 1;
+        _pushframe(Vs, fn->local + 2);
+        V_Value fnidx;
+        fnidx.type = A_OT_INT;
+        fnidx.u.n = Vs->mainidx;
+        _setbyidx(Vs, -1, &fnidx);
     }
 }
 static void _push(V_State *Vs, V_Value v) {
     _copy(&Vs->stack.nodes[Vs->stack.top++], &v);
 }
-static void _pop(V_State *Vs) {
-    --Vs->stack.top;
+static const V_Value* _pop(V_State *Vs) {
+    return &Vs->stack.nodes[--Vs->stack.top];
 }
 static void _pushframe(V_State *Vs, int count) {
     Vs->stack.top += count;
+    Vs->stack.frame = Vs->stack.top;
 }
 static void _popframe(V_State *Vs, int count) {
     Vs->stack.top -= count;
@@ -105,6 +124,10 @@ static void _popframe(V_State *Vs, int count) {
 static V_Value* _getbyidx(V_State *Vs, int idx) {
     int absidx = idx >= 0 ? idx : Vs->stack.frame + idx;
     return &Vs->stack.nodes[absidx];
+}
+static void _setbyidx(V_State *Vs, int idx, const V_Value* v) {
+    V_Value* dest = _getbyidx(Vs, idx);
+    _copy(dest, v);
 }
 static V_Func* _getfunc(V_State *Vs, int idx) {
     if (idx < 0) {
@@ -292,9 +315,10 @@ void V_run(V_State *Vs) {
 
     _reset(Vs);
 
+    _pstatus(Vs);
     for (;;) {
         int ip = Vs->instr.ip;
-        if (ip >= Vs->instr.count) {
+        if (ip >= (Vs->instr.count - 1)) {
             break;
         }
 
@@ -302,18 +326,17 @@ void V_run(V_State *Vs) {
         switch (ins->opcode) {
             case A_OP_MOV: {
                 printf("MOV: ");
+                _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
                 V_Value *dest = _getopvalue(Vs, ins, 0);
                 V_Value *src = _getopvalue(Vs, ins, 1);
-                _pvalue(&ins->ops[0]); printf(", "), _pvalue(src); printf("\n");
                 _copy(dest, src);
-                _pstatus(Vs);
             } break;
 
             case A_OP_ADD: {
                 printf("ADD: ");
+                _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
                 V_Value *dest = _getopvalue(Vs, ins, 0);
                 V_Value *src = _getopvalue(Vs, ins, 1);
-                _pvalue(&ins->ops[0]); printf(", "), _pvalue(src); printf("\n");
                 if (dest->type != src->type) {
                     fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
                 }
@@ -324,7 +347,6 @@ void V_run(V_State *Vs) {
                 } else {
                     fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
                 }
-                _pstatus(Vs);
             } break;
 
             case A_OP_SUB: {} break;
@@ -351,30 +373,45 @@ void V_run(V_State *Vs) {
             case A_OP_JL: {} break;
             case A_OP_JGE: {} break;
             case A_OP_JLE: {} break;
-            case A_OP_PUSH: {} break;
+
+            case A_OP_PUSH: {
+                printf("PUSH: ");
+                _pvalue(&ins->ops[0]); printf("\n");
+                V_Value *op = _getopvalue(Vs, ins, 0);
+                _push(Vs, *op);
+            } break;
+
             case A_OP_POP: {} break;
 
             case A_OP_CALL: {
-                printf("Call: ");
-                _pvalue(&ins->ops[0]); printf("\n");
-
                 int idx = ins->ops[0].u.n;
                 V_Func *fn = _getfunc(Vs, idx);
-                _pushframe(Vs, fn->param);
-                V_Value vret;
+
+                printf("Call: ");
+                _pvalue(&ins->ops[0]); printf(" (entry %d, param %d, local %d)", fn->entry, fn->param, fn->local); printf("\n");
+
+               V_Value vret;
                 vret.type = A_OT_INT;
-                vret.u.n = Vs->instr.ip;
+                vret.u.n = Vs->instr.ip + 1;
                 _push(Vs, vret);
-                _pushframe(Vs, fn->local);
+                _pushframe(Vs, fn->local + 1);
                 V_Value vidx;
                 vidx.type = A_OT_INT;
                 vidx.u.n = idx;
-                _push(Vs, vidx);
-                Vs->stack.frame = Vs->stack.top - 1;
+                _setbyidx(Vs, -1, &vidx);
                 Vs->instr.ip = fn->entry;
             } break;
 
-            case A_OP_RET: {} break;
+            case A_OP_RET: {
+                const V_Value *fnidx = _getbyidx(Vs, -1);
+                V_Func *fn = &Vs->func[fnidx->u.n];
+                V_Value *ret = _getbyidx(Vs, Vs->stack.frame - 2 - fn->local);
+                Vs->instr.ip = ret->u.n;
+                _popframe(Vs, Vs->stack.top - Vs->stack.frame + fn->local + fn->param + 1);
+                Vs->stack.frame = Vs->stack.top - 1;
+                printf("RET: (fnidx %d, ret %d)\n", fnidx->u.n, ret->u.n);
+            } break;
+
             case A_OP_CALLHOST: {} break;
             case A_OP_PAUSE: {} break;
             case A_OP_EXIT: {} break;
@@ -383,6 +420,7 @@ void V_run(V_State *Vs) {
         if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;
         }
+        _pstatus(Vs);
     }
 
     printf("\nrun successfully!\n");

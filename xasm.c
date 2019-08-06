@@ -513,7 +513,14 @@ static void _pass2(A_State *As) {
             case A_TT_PARAM: {
                 A_nexttoken(As);
                 A_Func *fn = _get_func_byidx(As, curfunc);
-                _add_symbol(As, As->curtoken.u.s, 1, curfunc, -2 - fn->local - fn->param);
+                /*
+                frame
+                funcidx
+                local
+                ret
+                param
+                */
+                _add_symbol(As, As->curtoken.u.s, 1, curfunc, -2 - fn->local - 1 - fn->param);
                 ++fn->param;
                 break;
             }
