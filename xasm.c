@@ -539,9 +539,6 @@ static void _pass2(A_State *As) {
 }
 
 void A_parse(A_State *As) {
-    printf("XASM\nXtremeScript Assembler Version %d.%d\nWritten by Outsky\n\nAssembling...\n\n",
-        A_VERSION_MAJOR, A_VERSION_MINOR);
-
     _pass1(As);
     A_resetstate(As);
     _pass2(As);
@@ -626,7 +623,8 @@ void A_createbin(A_State *As) {
         }
     }
 
-    printf("%s created successfully!\n\n", fname);
+    printf("Output file: %s\n", fname);
+    printf("Version %d.%d\n", A_VERSION_MAJOR, A_VERSION_MINOR);
     printf("Write size: %ld\n", fsize);
     printf("Source Lines Processed: %d\n", As->curline);
     printf("Stack Size: %d\n", As->mh.stacksize);

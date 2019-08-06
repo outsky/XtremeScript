@@ -196,8 +196,6 @@ void V_freestate(V_State *Vs) {
 }
 
 int V_load(V_State *Vs, FILE *f) {
-    printf("XVM\nWritten by Outsky\n\nLoading...\n\n");
-
     // header
     char tmp[4];
     fread(tmp, 1, 4, f);
@@ -291,7 +289,7 @@ int V_load(V_State *Vs, FILE *f) {
         return 0;
     }
 
-    printf("load successfully!\n\n");
+#ifdef V_DEBUG
     printf("Load size: %ld\n", ftell(f));
     printf("XtremeScript VM Version %d.%d\n", Vs->major, Vs->minor);
     printf("Stack Size: %d\n", Vs->stack.size);
@@ -302,12 +300,13 @@ int V_load(V_State *Vs, FILE *f) {
     if (Vs->mainidx >= 0) {
         printf(" (Index %d)", Vs->mainidx);
     }
+    printf("\n\n");
+#endif
 
     return 1;
 }
 
 void V_run(V_State *Vs) {
-    printf("\n\nrunning...\n\n");
     if (Vs->mainidx < 0) {
         printf("No _Main(), nothing to run\n");
         return;
@@ -469,7 +468,5 @@ void V_run(V_State *Vs) {
         _pstatus(Vs);
 #endif
     }
-
-    printf("\nrun successfully!\n");
 }
 
