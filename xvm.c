@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "lib.h"
 #include "xasm.h"
 #include "xvm.h"
@@ -187,7 +188,20 @@ static void _run_add(V_State *Vs, const V_Instr *ins) {
         fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
     }
 }
-static void _run_sub(V_State *Vs, const V_Instr *ins) {}
+static void _run_sub(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    if (dest->type != src->type) {
+        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+    }
+    if (dest->type == A_OT_INT) {
+        dest->u.n -= src->u.n;
+    } else if (dest->type == A_OT_FLOAT) {
+        dest->u.f -= src->u.f;
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+    }
+}
 static void _run_mul(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
@@ -202,34 +216,133 @@ static void _run_mul(V_State *Vs, const V_Instr *ins) {
         fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
     }
 }
-static void _run_div(V_State *Vs, const V_Instr *ins) {}
-static void _run_mod(V_State *Vs, const V_Instr *ins) {}
-static void _run_exp(V_State *Vs, const V_Instr *ins) {}
-static void _run_neg(V_State *Vs, const V_Instr *ins) {}
-static void _run_inc(V_State *Vs, const V_Instr *ins) {}
-static void _run_dec(V_State *Vs, const V_Instr *ins) {}
-static void _run_and(V_State *Vs, const V_Instr *ins) {}
-static void _run_or(V_State *Vs, const V_Instr *ins) {}
-static void _run_xor(V_State *Vs, const V_Instr *ins) {}
-static void _run_not(V_State *Vs, const V_Instr *ins) {}
-static void _run_shl(V_State *Vs, const V_Instr *ins) {}
-static void _run_shr(V_State *Vs, const V_Instr *ins) {}
-static void _run_concat(V_State *Vs, const V_Instr *ins) {
-    V_Value *op0 = _getopvalue(Vs, 0);
-    V_Value *op1 = _getopvalue(Vs, 1);
-    char *buff = (char*)malloc(sizeof(char) * (strlen(op0->u.s) + strlen(op1->u.s) + 1));
-    strcpy(buff, op0->u.s);
-    strcpy(buff+strlen(buff), op1->u.s);
-    free(op0->u.s);
-    op0->u.s = buff;
+static void _run_div(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    if (dest->type != src->type) {
+        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+    }
+    if (dest->type == A_OT_INT) {
+        dest->u.n /= src->u.n;
+    } else if (dest->type == A_OT_FLOAT) {
+        dest->u.f /= src->u.f;
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+    }
 }
-static void _run_getchar(V_State *Vs, const V_Instr *ins) {}
-static void _run_setchar(V_State *Vs, const V_Instr *ins) {}
+static void _run_mod(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    if (dest->type != src->type) {
+        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+    }
+    if (dest->type == A_OT_INT) {
+        dest->u.n = dest->u.n % src->u.n;
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math mod ops must be int");
+    }
+}
+static void _run_exp(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    if (dest->type != src->type) {
+        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+    }
+    if (dest->type == A_OT_INT) {
+        dest->type = A_OT_FLOAT;
+        dest->u.f = pow(dest->u.n, src->u.n);
+    } else if (dest->type == A_OT_FLOAT) {
+        dest->u.f = pow(dest->u.n, src->u.n);
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+    }
+}
+static void _run_neg(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    if (dest->type == A_OT_INT) {
+        dest->u.n = -dest->u.n;
+    } else if (dest->type == A_OT_FLOAT) {
+        dest->u.f = -dest->u.f;
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math neg only supports int and float");
+    }
+}
+static void _run_inc(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    ++dest->u.n;
+}
+static void _run_dec(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    --dest->u.n;
+}
+static void _run_and(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    dest->u.n &= src->u.n;
+}
+static void _run_or(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    dest->u.n |= src->u.n;
+}
+static void _run_xor(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    dest->u.n ^= src->u.n;
+}
+static void _run_not(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    dest->u.n = ~dest->u.n;
+}
+static void _run_shl(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *shift = _getopvalue(Vs, 1);
+    dest->u.n <<= shift->u.n;
+}
+static void _run_shr(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *shift = _getopvalue(Vs, 1);
+    dest->u.n >>= shift->u.n;
+}
+static void _run_concat(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    char *buff = (char*)malloc(sizeof(char) * (strlen(op1->u.s) + strlen(op2->u.s) + 1));
+    strcpy(buff, op1->u.s);
+    strcpy(buff+strlen(buff), op2->u.s);
+    free(op1->u.s);
+    op1->u.s = buff;
+}
+static void _run_getchar(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    V_Value *idx = _getopvalue(Vs, 2);
+    dest->type = A_OT_INT;
+    dest->u.n = (int)*(src->u.s + idx->u.n);
+}
+static void _run_setchar(V_State *Vs, const V_Instr *ins) {
+    V_Value *idx = _getopvalue(Vs, 0);
+    V_Value *dest = _getopvalue(Vs, 1);
+    V_Value *src = _getopvalue(Vs, 2);
+    *(dest->u.s + idx->u.n) = (char)src->u.n;
+}
 static void _run_jmp(V_State *Vs, const V_Instr *ins) {
     Vs->instr.ip = ins->ops[0].u.n;
 }
-static void _run_je(V_State *Vs, const V_Instr *ins) {}
-static void _run_jne(V_State *Vs, const V_Instr *ins) {}
+static void _run_je(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    if (op1->u.n == op2->u.n) {
+        Vs->instr.ip = ins->ops[2].u.n;
+    }
+}
+static void _run_jne(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    if (op1->u.n != op2->u.n) {
+        Vs->instr.ip = ins->ops[2].u.n;
+    }
+}
 static void _run_jg(V_State *Vs, const V_Instr *ins) {
     V_Value *op1 = _getopvalue(Vs, 0);
     V_Value *op2 = _getopvalue(Vs, 1);
@@ -237,15 +350,36 @@ static void _run_jg(V_State *Vs, const V_Instr *ins) {
         Vs->instr.ip = ins->ops[2].u.n;
     }
 }
-
-static void _run_jl(V_State *Vs, const V_Instr *ins) {}
-static void _run_jge(V_State *Vs, const V_Instr *ins) {}
-static void _run_jle(V_State *Vs, const V_Instr *ins) {}
+static void _run_jl(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    if (op1->u.n < op2->u.n) {
+        Vs->instr.ip = ins->ops[2].u.n;
+    }
+}
+static void _run_jge(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    if (op1->u.n >= op2->u.n) {
+        Vs->instr.ip = ins->ops[2].u.n;
+    }
+}
+static void _run_jle(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    if (op1->u.n <= op2->u.n) {
+        Vs->instr.ip = ins->ops[2].u.n;
+    }
+}
 static void _run_push(V_State *Vs, const V_Instr *ins) {
     V_Value *op = _getopvalue(Vs, 0);
     _push(Vs, *op);
 }
-static void _run_pop(V_State *Vs, const V_Instr *ins) {}
+static void _run_pop(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    const V_Value *src = _pop(Vs);
+    _copy(dest, src);
+}
 static void _run_call(V_State *Vs, const V_Instr *ins) {
     int idx = ins->ops[0].u.n;
     V_Func *fn = _getfunc(Vs, idx);

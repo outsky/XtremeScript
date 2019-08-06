@@ -1,5 +1,5 @@
 xs: list.o main.o xasm.o lib.o xvm.o
-	cc -g -o xs.out list.o main.o xasm.o lib.o xvm.o
+	cc -g -o xs.out list.o main.o xasm.o lib.o xvm.o -lm
 
 xvm.o: xvm.h xvm.c
 	cc -g -c xvm.c

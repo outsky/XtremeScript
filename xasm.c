@@ -28,12 +28,12 @@ static int _opcfg[][4] = {
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // NEG dest
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // INC dest
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // DEC dest
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM, 0}, // AND dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM, 0}, // OR  dest, src
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM, 0}, // XOR dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_MEM, 0}, // AND dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_MEM, 0}, // OR  dest, src
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_MEM, 0}, // XOR dest, src
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // NOT dest
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM, 0}, // SHL dest, shiftcount
-    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_FLOAT | A_OTM_MEM, 0}, // SHR dest, shiftcount
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_MEM, 0}, // SHL dest, shiftcount
+    {2,      A_OTM_MEM | A_OTM_REG, A_OTM_INT | A_OTM_MEM, 0}, // SHR dest, shiftcount
     {2,      A_OTM_MEM | A_OTM_REG, A_OTM_STRING, 0}, // CONCAT string0, string1
     {3,      A_OTM_REG, A_OTM_STRING, A_OTM_INT}, // GETCHAR dest, src, index
     {3,      A_OTM_INT, A_OTM_REG, A_OTM_STRING}, // SETCHAR index, dest, src
@@ -45,7 +45,7 @@ static int _opcfg[][4] = {
     {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JGE op0, op1, label
     {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JLE op0, op1, label
     {1,      A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM, 0, 0}, // PUSH src
-    {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // POP  dest
+    {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // POP dest
     {1,      A_OTM_FUNC, 0, 0}, // CALL funcname
     {0,      0, 0, 0}, // RET
     {1,      A_OTM_API, 0, 0}, // CALLHOST funcname
