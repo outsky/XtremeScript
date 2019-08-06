@@ -168,6 +168,125 @@ static V_Value* _getopvalue(V_State *Vs, int idx) {
     }
 }
 
+static void _run_mov(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    _copy(dest, src);
+}
+static void _run_add(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    if (dest->type != src->type) {
+        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+    }
+    if (dest->type == A_OT_INT) {
+        dest->u.n += src->u.n;
+    } else if (dest->type == A_OT_FLOAT) {
+        dest->u.f += src->u.f;
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+    }
+}
+static void _run_sub(V_State *Vs, const V_Instr *ins) {}
+static void _run_mul(V_State *Vs, const V_Instr *ins) {
+    V_Value *dest = _getopvalue(Vs, 0);
+    V_Value *src = _getopvalue(Vs, 1);
+    if (dest->type != src->type) {
+        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+    }
+    if (dest->type == A_OT_INT) {
+        dest->u.n *= src->u.n;
+    } else if (dest->type == A_OT_FLOAT) {
+        dest->u.f *= src->u.f;
+    } else {
+        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+    }
+}
+static void _run_div(V_State *Vs, const V_Instr *ins) {}
+static void _run_mod(V_State *Vs, const V_Instr *ins) {}
+static void _run_exp(V_State *Vs, const V_Instr *ins) {}
+static void _run_neg(V_State *Vs, const V_Instr *ins) {}
+static void _run_inc(V_State *Vs, const V_Instr *ins) {}
+static void _run_dec(V_State *Vs, const V_Instr *ins) {}
+static void _run_and(V_State *Vs, const V_Instr *ins) {}
+static void _run_or(V_State *Vs, const V_Instr *ins) {}
+static void _run_xor(V_State *Vs, const V_Instr *ins) {}
+static void _run_not(V_State *Vs, const V_Instr *ins) {}
+static void _run_shl(V_State *Vs, const V_Instr *ins) {}
+static void _run_shr(V_State *Vs, const V_Instr *ins) {}
+static void _run_concat(V_State *Vs, const V_Instr *ins) {
+    V_Value *op0 = _getopvalue(Vs, 0);
+    V_Value *op1 = _getopvalue(Vs, 1);
+    char *buff = (char*)malloc(sizeof(char) * (strlen(op0->u.s) + strlen(op1->u.s) + 1));
+    strcpy(buff, op0->u.s);
+    strcpy(buff+strlen(buff), op1->u.s);
+    free(op0->u.s);
+    op0->u.s = buff;
+}
+static void _run_getchar(V_State *Vs, const V_Instr *ins) {}
+static void _run_setchar(V_State *Vs, const V_Instr *ins) {}
+static void _run_jmp(V_State *Vs, const V_Instr *ins) {
+    Vs->instr.ip = ins->ops[0].u.n;
+}
+static void _run_je(V_State *Vs, const V_Instr *ins) {}
+static void _run_jne(V_State *Vs, const V_Instr *ins) {}
+static void _run_jg(V_State *Vs, const V_Instr *ins) {
+    V_Value *op1 = _getopvalue(Vs, 0);
+    V_Value *op2 = _getopvalue(Vs, 1);
+    if (op1->u.n > op2->u.n) {
+        Vs->instr.ip = ins->ops[2].u.n;
+    }
+}
+
+static void _run_jl(V_State *Vs, const V_Instr *ins) {}
+static void _run_jge(V_State *Vs, const V_Instr *ins) {}
+static void _run_jle(V_State *Vs, const V_Instr *ins) {}
+static void _run_push(V_State *Vs, const V_Instr *ins) {
+    V_Value *op = _getopvalue(Vs, 0);
+    _push(Vs, *op);
+}
+static void _run_pop(V_State *Vs, const V_Instr *ins) {}
+static void _run_call(V_State *Vs, const V_Instr *ins) {
+    int idx = ins->ops[0].u.n;
+    V_Func *fn = _getfunc(Vs, idx);
+#ifdef V_DEBUG
+    printf("(entry %d, param %d, local %d)\n", fn->entry, fn->param, fn->local);
+#endif
+
+    V_Value vret;
+    vret.type = A_OT_INT;
+    vret.u.n = Vs->instr.ip + 1;
+    _push(Vs, vret);
+
+    V_Value vidx;
+    vidx.type = A_OT_ABS_SIDX;
+    vidx.u.n = idx;
+    vidx.idx = Vs->stack.frame;
+
+    _pushframe(Vs, fn->local + 1);
+    _setbyidx(Vs, -1, &vidx);
+    Vs->instr.ip = fn->entry;
+}
+static void _run_ret(V_State *Vs, const V_Instr *ins) {
+    const V_Value *fnidx = _pop(Vs);
+    V_Func *fn = &Vs->func[fnidx->u.n];
+    V_Value *ret = _getbyidx(Vs, Vs->stack.top - fn->local - 1);
+#ifdef V_DEBUG
+    printf("(fnidx %d, ret %d, prevframe: %d)\n", fnidx->u.n, ret->u.n, fnidx->idx);
+#endif
+
+    Vs->instr.ip = ret->u.n;
+    _popframe(Vs, fn->local + fn->param + 1);
+    Vs->stack.frame = fnidx->idx;
+}
+static void _run_callhost(V_State *Vs, const V_Instr *ins) {}
+static void _run_pause(V_State *Vs, const V_Instr *ins) {}
+static void _run_exit(V_State *Vs, const V_Instr *ins) {}
+static void _run_echo(V_State *Vs, const V_Instr *ins) {
+     V_Value *v = _getopvalue(Vs, 0);
+     _pvalue(v); printf("\n");
+}
+
 
 /* none static functions */
 
@@ -335,131 +454,41 @@ void V_run(V_State *Vs) {
         printf("\n");
 #endif
         switch (ins->opcode) {
-            case A_OP_MOV: {
-                V_Value *dest = _getopvalue(Vs, 0);
-                V_Value *src = _getopvalue(Vs, 1);
-                _copy(dest, src);
-            } break;
-
-            case A_OP_ADD: {
-                V_Value *dest = _getopvalue(Vs, 0);
-                V_Value *src = _getopvalue(Vs, 1);
-                if (dest->type != src->type) {
-                    fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
-                }
-                if (dest->type == A_OT_INT) {
-                    dest->u.n += src->u.n;
-                } else if (dest->type == A_OT_FLOAT) {
-                    dest->u.f += src->u.f;
-                } else {
-                    fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
-                }
-            } break;
-
-            case A_OP_SUB: {} break;
-
-            case A_OP_MUL: {
-                V_Value *dest = _getopvalue(Vs, 0);
-                V_Value *src = _getopvalue(Vs, 1);
-                if (dest->type != src->type) {
-                    fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
-                }
-                if (dest->type == A_OT_INT) {
-                    dest->u.n *= src->u.n;
-                } else if (dest->type == A_OT_FLOAT) {
-                    dest->u.f *= src->u.f;
-                } else {
-                    fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
-                }
-
-            } break;
-
-            case A_OP_DIV: {} break;
-            case A_OP_MOD: {} break;
-            case A_OP_EXP: {} break;
-            case A_OP_NEG: {} break;
-            case A_OP_INC: {} break;
-            case A_OP_DEC: {} break;
-            case A_OP_AND: {} break;
-            case A_OP_OR: {} break;
-            case A_OP_XOR: {} break;
-            case A_OP_NOT: {} break;
-            case A_OP_SHL: {} break;
-            case A_OP_SHR: {} break;
-            case A_OP_CONCAT: {} break;
-            case A_OP_GETCHAR: {} break;
-            case A_OP_SETCHAR: {} break;
-
-            case A_OP_JMP: {
-                Vs->instr.ip = ins->ops[0].u.n;
-            } break;
-
-            case A_OP_JE: {} break;
-            case A_OP_JNE: {} break;
-
-            case A_OP_JG: {
-                V_Value *op1 = _getopvalue(Vs, 0);
-                V_Value *op2 = _getopvalue(Vs, 1);
-                if (op1->u.n > op2->u.n) {
-                    Vs->instr.ip = ins->ops[2].u.n;
-                }
-            } break;
-
-            case A_OP_JL: {} break;
-            case A_OP_JGE: {} break;
-            case A_OP_JLE: {} break;
-
-            case A_OP_PUSH: {
-                V_Value *op = _getopvalue(Vs, 0);
-                _push(Vs, *op);
-            } break;
-
-            case A_OP_POP: {} break;
-
-            case A_OP_CALL: {
-                int idx = ins->ops[0].u.n;
-                V_Func *fn = _getfunc(Vs, idx);
-
-                V_Value vidx;
-                vidx.type = A_OT_ABS_SIDX;
-                vidx.u.n = idx;
-                vidx.idx = Vs->stack.frame;
-
-#ifdef V_DEBUG
-                printf("(entry %d, param %d, local %d)\n", fn->entry, fn->param, fn->local);
-#endif
-
-                V_Value vret;
-                vret.type = A_OT_INT;
-                vret.u.n = Vs->instr.ip + 1;
-                _push(Vs, vret);
-                _pushframe(Vs, fn->local + 1);
-                _setbyidx(Vs, -1, &vidx);
-                Vs->instr.ip = fn->entry;
-            } break;
-
-            case A_OP_RET: {
-                const V_Value *fnidx = _pop(Vs);
-                V_Func *fn = &Vs->func[fnidx->u.n];
-                V_Value *ret = _getbyidx(Vs, Vs->stack.top - fn->local - 1);
-                Vs->instr.ip = ret->u.n;
-                _popframe(Vs, fn->local + fn->param + 1);
-                Vs->stack.frame = fnidx->idx;
-#ifdef V_DEBUG
-                printf("(fnidx %d, ret %d, prevframe: %d)\n", fnidx->u.n, ret->u.n, fnidx->idx);
-#endif
-            } break;
-
-            case A_OP_CALLHOST: {} break;
-            case A_OP_PAUSE: {} break;
-            case A_OP_EXIT: {} break;
-
-            case A_OP_ECHO: {
-                V_Value *v = _getopvalue(Vs, 0);
-                _pvalue(v); printf("\n");
-            } break;
-
-            default: {} break;
+            case A_OP_MOV: { _run_mov(Vs, ins); } break;
+            case A_OP_ADD: { _run_add(Vs, ins); } break;
+            case A_OP_SUB: { _run_sub(Vs, ins); } break;
+            case A_OP_MUL: { _run_mul(Vs, ins); } break;
+            case A_OP_DIV: { _run_div(Vs, ins); } break;
+            case A_OP_MOD: { _run_mod(Vs, ins); } break;
+            case A_OP_EXP: { _run_exp(Vs, ins); } break;
+            case A_OP_NEG: { _run_neg(Vs, ins); } break;
+            case A_OP_INC: { _run_inc(Vs, ins); } break;
+            case A_OP_DEC: { _run_dec(Vs, ins); } break;
+            case A_OP_AND: { _run_and(Vs, ins); } break;
+            case A_OP_OR: { _run_or(Vs, ins); } break;
+            case A_OP_XOR: { _run_xor(Vs, ins); } break;
+            case A_OP_NOT: { _run_not(Vs, ins); } break;
+            case A_OP_SHL: { _run_shl(Vs, ins); } break;
+            case A_OP_SHR: { _run_shr(Vs, ins); } break;
+            case A_OP_CONCAT: { _run_concat(Vs, ins); } break;
+            case A_OP_GETCHAR: { _run_getchar(Vs, ins); } break;
+            case A_OP_SETCHAR: { _run_setchar(Vs, ins); } break;
+            case A_OP_JMP: { _run_jmp(Vs, ins); } break;
+            case A_OP_JE: { _run_je(Vs, ins); } break;
+            case A_OP_JNE: { _run_jne(Vs, ins); } break;
+            case A_OP_JG: { _run_jg(Vs, ins); } break;
+            case A_OP_JL: { _run_jl(Vs, ins); } break;
+            case A_OP_JGE: { _run_jge(Vs, ins); } break;
+            case A_OP_JLE: { _run_jle(Vs, ins); } break;
+            case A_OP_PUSH: { _run_push(Vs, ins); } break;
+            case A_OP_POP: { _run_pop(Vs, ins); } break;
+            case A_OP_CALL: { _run_call(Vs, ins); } break;
+            case A_OP_RET: { _run_ret(Vs, ins); } break;
+            case A_OP_CALLHOST: { _run_callhost(Vs, ins); } break;
+            case A_OP_PAUSE: { _run_pause(Vs, ins); } break;
+            case A_OP_EXIT: { _run_exit(Vs, ins); } break;
+            case A_OP_ECHO: { _run_echo(Vs, ins); } break;
+            default: { fatal(__FUNCTION__, __LINE__, "unknown op"); } break;
         }
         if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;
