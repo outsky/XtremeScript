@@ -11,7 +11,7 @@ typedef struct {
         double f;
         char *s;
     } u;
-    int idx;    // for A_OT_ABS_SIDX and A_OT_REL_SIDX
+    int idx;    // for A_OT_ABS_SIDX and A_OT_REL_SIDX and FrameIndex for function call
 } V_Value;
 
 typedef struct {

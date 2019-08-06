@@ -101,11 +101,7 @@ static void _reset(V_State *Vs) {
     V_Func *fn = _getfunc(Vs, Vs->mainidx);
     if (fn != NULL) {
         Vs->instr.ip = fn->entry;
-        _pushframe(Vs, fn->local + 2);
-        V_Value fnidx;
-        fnidx.type = A_OT_INT;
-        fnidx.u.n = Vs->mainidx;
-        _setbyidx(Vs, -1, &fnidx);
+        _pushframe(Vs, fn->local + 1);
     }
 }
 static void _push(V_State *Vs, V_Value v) {
@@ -350,7 +346,25 @@ void V_run(V_State *Vs) {
             } break;
 
             case A_OP_SUB: {} break;
-            case A_OP_MUL: {} break;
+
+            case A_OP_MUL: {
+                printf("MUL: ");
+                _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
+                V_Value *dest = _getopvalue(Vs, ins, 0);
+                V_Value *src = _getopvalue(Vs, ins, 1);
+                if (dest->type != src->type) {
+                    fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+                }
+                if (dest->type == A_OT_INT) {
+                    dest->u.n *= src->u.n;
+                } else if (dest->type == A_OT_FLOAT) {
+                    dest->u.f *= src->u.f;
+                } else {
+                    fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+                }
+
+            } break;
+
             case A_OP_DIV: {} break;
             case A_OP_MOD: {} break;
             case A_OP_EXP: {} break;
@@ -387,29 +401,31 @@ void V_run(V_State *Vs) {
                 int idx = ins->ops[0].u.n;
                 V_Func *fn = _getfunc(Vs, idx);
 
+                V_Value vidx;
+                vidx.type = A_OT_ABS_SIDX;
+                vidx.u.n = idx;
+                vidx.idx = Vs->stack.frame;
+
                 printf("Call: ");
                 _pvalue(&ins->ops[0]); printf(" (entry %d, param %d, local %d)", fn->entry, fn->param, fn->local); printf("\n");
 
-               V_Value vret;
+                V_Value vret;
                 vret.type = A_OT_INT;
                 vret.u.n = Vs->instr.ip + 1;
                 _push(Vs, vret);
                 _pushframe(Vs, fn->local + 1);
-                V_Value vidx;
-                vidx.type = A_OT_INT;
-                vidx.u.n = idx;
                 _setbyidx(Vs, -1, &vidx);
                 Vs->instr.ip = fn->entry;
             } break;
 
             case A_OP_RET: {
-                const V_Value *fnidx = _getbyidx(Vs, -1);
+                const V_Value *fnidx = _pop(Vs);
                 V_Func *fn = &Vs->func[fnidx->u.n];
-                V_Value *ret = _getbyidx(Vs, Vs->stack.frame - 2 - fn->local);
+                V_Value *ret = _getbyidx(Vs, Vs->stack.top - fn->local - 1);
                 Vs->instr.ip = ret->u.n;
-                _popframe(Vs, Vs->stack.top - Vs->stack.frame + fn->local + fn->param + 1);
-                Vs->stack.frame = Vs->stack.top - 1;
-                printf("RET: (fnidx %d, ret %d)\n", fnidx->u.n, ret->u.n);
+                _popframe(Vs, fn->local + fn->param + 1);
+                Vs->stack.frame = fnidx->idx;
+                printf("RET: (fnidx %d, ret %d, prevframe: %d)\n", fnidx->u.n, ret->u.n, fnidx->idx);
             } break;
 
             case A_OP_CALLHOST: {} break;
