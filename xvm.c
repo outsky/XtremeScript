@@ -22,7 +22,7 @@ static V_Value* _getbyidx(V_State *Vs, int idx);
 static void _setbyidx(V_State *Vs, int idx, const V_Value* v);
 
 // op
-static V_Value* _getopvalue(V_State *Vs, const V_Instr *ins, int idx);
+static V_Value* _getopvalue(V_State *Vs, int idx);
 
 static V_Func* _getfunc(V_State *Vs, int idx);
 
@@ -141,8 +141,8 @@ static void _copy(V_Value *dest, const V_Value *src) {
         dest->u.s = strdup(src->u.s);
     }
 }
-static V_Value* _getopvalue(V_State *Vs, const V_Instr *ins, int idx) {
-    V_Value *v = &ins->ops[idx];
+static V_Value* _getopvalue(V_State *Vs, int idx) {
+    V_Value *v = &Vs->instr.instr[Vs->instr.ip].ops[idx];
     switch (v->type) {
         case A_OT_ABS_SIDX: {
             int idx = v->u.n >= 0 ? v->u.n + v->idx : v->u.n - v->idx;
@@ -328,8 +328,8 @@ void V_run(V_State *Vs) {
                 printf("MOV: ");
                 _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
 #endif
-                V_Value *dest = _getopvalue(Vs, ins, 0);
-                V_Value *src = _getopvalue(Vs, ins, 1);
+                V_Value *dest = _getopvalue(Vs, 0);
+                V_Value *src = _getopvalue(Vs, 1);
                 _copy(dest, src);
             } break;
 
@@ -338,8 +338,8 @@ void V_run(V_State *Vs) {
                 printf("ADD: ");
                 _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
 #endif
-                V_Value *dest = _getopvalue(Vs, ins, 0);
-                V_Value *src = _getopvalue(Vs, ins, 1);
+                V_Value *dest = _getopvalue(Vs, 0);
+                V_Value *src = _getopvalue(Vs, 1);
                 if (dest->type != src->type) {
                     fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
                 }
@@ -359,8 +359,8 @@ void V_run(V_State *Vs) {
                 printf("MUL: ");
                 _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
 #endif
-                V_Value *dest = _getopvalue(Vs, ins, 0);
-                V_Value *src = _getopvalue(Vs, ins, 1);
+                V_Value *dest = _getopvalue(Vs, 0);
+                V_Value *src = _getopvalue(Vs, 1);
                 if (dest->type != src->type) {
                     fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
                 }
@@ -398,8 +398,8 @@ void V_run(V_State *Vs) {
             case A_OP_JNE: {} break;
 
             case A_OP_JG: {
-                V_Value *op1 = _getopvalue(Vs, ins, 0);
-                V_Value *op2 = _getopvalue(Vs, ins, 1);
+                V_Value *op1 = _getopvalue(Vs, 0);
+                V_Value *op2 = _getopvalue(Vs, 1);
                 if (op1->u.n > op2->u.n) {
                     Vs->instr.ip = ins->ops[2].u.n;
                 }
@@ -414,7 +414,7 @@ void V_run(V_State *Vs) {
                 printf("PUSH: ");
                 _pvalue(&ins->ops[0]); printf("\n");
 #endif
-                V_Value *op = _getopvalue(Vs, ins, 0);
+                V_Value *op = _getopvalue(Vs, 0);
                 _push(Vs, *op);
             } break;
 
@@ -463,7 +463,7 @@ void V_run(V_State *Vs) {
 #ifdef V_DEBUG
                 printf("ECHO:\n");
 #endif
-                V_Value *v = _getopvalue(Vs, ins, 0);
+                V_Value *v = _getopvalue(Vs, 0);
                 _pvalue(v); printf("\n");
             } break;
 
