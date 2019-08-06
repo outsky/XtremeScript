@@ -19,11 +19,10 @@ Func MyAdd {
     Param X
     ; Declare local data
     Var Sum
-test:
     Mov Sum, X
     Add Sum, Y
     ; Put the result in the _RetVal register
-test1: Mov _RetVal, Sum
+    Mov _RetVal, Sum
     ; Remember, Ret will be automatically added
 }
 
@@ -47,7 +46,6 @@ Func MyFunc
     ; Set some array values
     Mov GlobalArray[0], "This"
     Mov GlobalArray[1], "is"
-test:
     Mov GlobalArray[2], "an"
     Mov GlobalArray[3], "arry."
 }
