@@ -4,7 +4,7 @@
 #include "xasm.h"
 #include "xvm.h"
 
-//#define V_DEBUG 1
+#define V_DEBUG 1
 
 /* static function declarations */
 static void _pvalue(const V_Value *v);
@@ -61,8 +61,11 @@ static void _pvalue(const V_Value *v) {
         case A_OT_FUNCIDX: {
             printf("Fn[%d]", v->u.n);
         } break;
+        case A_OT_INSTRIDX: {
+            printf("Instr %d", v->u.n);
+        } break;
         default: {
-            printf("<%d> S[%d]", v->type, v->u.n);
+            printf("<%d> %d", v->type, v->u.n);
         } break;
     }
 }
@@ -322,22 +325,24 @@ void V_run(V_State *Vs) {
         }
 
         const V_Instr *ins = Vs->instr.instr + ip;
+#ifdef V_DEBUG
+        printf("%s: ", A_opnames[ins->opcode]);
+        for (int i = 0; i < ins->opcount; ++i) {
+            _pvalue(&ins->ops[i]);
+            if (i < ins->opcount - 1) {
+                printf(", ");
+            }
+        }
+        printf("\n");
+#endif
         switch (ins->opcode) {
             case A_OP_MOV: {
-#ifdef V_DEBUG
-                printf("MOV: ");
-                _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
-#endif
                 V_Value *dest = _getopvalue(Vs, 0);
                 V_Value *src = _getopvalue(Vs, 1);
                 _copy(dest, src);
             } break;
 
             case A_OP_ADD: {
-#ifdef V_DEBUG
-                printf("ADD: ");
-                _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
-#endif
                 V_Value *dest = _getopvalue(Vs, 0);
                 V_Value *src = _getopvalue(Vs, 1);
                 if (dest->type != src->type) {
@@ -355,10 +360,6 @@ void V_run(V_State *Vs) {
             case A_OP_SUB: {} break;
 
             case A_OP_MUL: {
-#ifdef V_DEBUG
-                printf("MUL: ");
-                _pvalue(&ins->ops[0]); printf(", "), _pvalue(&ins->ops[1]); printf("\n");
-#endif
                 V_Value *dest = _getopvalue(Vs, 0);
                 V_Value *src = _getopvalue(Vs, 1);
                 if (dest->type != src->type) {
@@ -410,10 +411,6 @@ void V_run(V_State *Vs) {
             case A_OP_JLE: {} break;
 
             case A_OP_PUSH: {
-#ifdef V_DEBUG
-                printf("PUSH: ");
-                _pvalue(&ins->ops[0]); printf("\n");
-#endif
                 V_Value *op = _getopvalue(Vs, 0);
                 _push(Vs, *op);
             } break;
@@ -430,8 +427,7 @@ void V_run(V_State *Vs) {
                 vidx.idx = Vs->stack.frame;
 
 #ifdef V_DEBUG
-                printf("Call: ");
-                _pvalue(&ins->ops[0]); printf(" (entry %d, param %d, local %d)", fn->entry, fn->param, fn->local); printf("\n");
+                printf("(entry %d, param %d, local %d)\n", fn->entry, fn->param, fn->local);
 #endif
 
                 V_Value vret;
@@ -451,7 +447,7 @@ void V_run(V_State *Vs) {
                 _popframe(Vs, fn->local + fn->param + 1);
                 Vs->stack.frame = fnidx->idx;
 #ifdef V_DEBUG
-                printf("RET: (fnidx %d, ret %d, prevframe: %d)\n", fnidx->u.n, ret->u.n, fnidx->idx);
+                printf("(fnidx %d, ret %d, prevframe: %d)\n", fnidx->u.n, ret->u.n, fnidx->idx);
 #endif
             } break;
 
@@ -460,9 +456,6 @@ void V_run(V_State *Vs) {
             case A_OP_EXIT: {} break;
 
             case A_OP_ECHO: {
-#ifdef V_DEBUG
-                printf("ECHO:\n");
-#endif
                 V_Value *v = _getopvalue(Vs, 0);
                 _pvalue(v); printf("\n");
             } break;
