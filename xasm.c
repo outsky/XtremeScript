@@ -11,7 +11,7 @@
 const char *A_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
     "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
     "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
-    "CALLHOST", "PAUSE", "EXIT"};
+    "CALLHOST", "PAUSE", "EXIT", "ECHO"};
 
 
 static int _opcfg[][4] = {
@@ -51,6 +51,7 @@ static int _opcfg[][4] = {
     {1,      A_OTM_API, 0, 0}, // CALLHOST funcname
     {1,      A_OTM_INT | A_OTM_MEM, 0, 0}, // PAUSE duration
     {1,      A_OTM_INT, 0, 0}, // EXIT  code
+    {1,      A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM | A_OTM_REG, 0, 0}, // ECHO v
 };
 
 
@@ -280,6 +281,7 @@ A_TokenType A_nexttoken(A_State *As) {
 static void _pass1(A_State *As) {
     int stacksizeflag = 0;
     int curfunc = -1;
+    int curinstr = 0;
     for (;;) {
         A_TokenType t = A_nexttoken(As);
         if (t == A_TT_INVALID) {
@@ -297,7 +299,7 @@ static void _pass1(A_State *As) {
                     free(s);
                     A_FATAL("label in global scope is not allowed");
                 }
-                _add_label(As, s, curfunc, As->instr->count);
+                _add_label(As, s, curfunc, curinstr);
                 free(s);
                 break;
             }
@@ -305,6 +307,7 @@ static void _pass1(A_State *As) {
                 if (curfunc < 0) {
                     A_FATAL("unexpected `}'");
                 }
+                ++curinstr;
                 curfunc = -1;
                 break;
             }
@@ -328,6 +331,7 @@ static void _pass1(A_State *As) {
                 }
 
                 while (A_nexttoken(As) != A_TT_NEWLINE) {}
+                ++curinstr;
                 A_cachenexttoken(As);
                 break;
             }
@@ -720,7 +724,6 @@ static int _add_instr(A_State *As, int opcode, list *operands) {
     i->operands = operands;
     return list_pushback(As->instr, i);
 }
-
 
 static void _initops(A_State *As) { 
     for (int i = 0; i < sizeof(A_opnames) / sizeof(char*); ++i) {
