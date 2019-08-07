@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -std=c99
+CFLAGS = -g -Wall -std=c99 -D_GNU_SOURCE
 
 xs: list.o main.o xasm.o lib.o xvm.o
 	cc -o xs.out $(CFLAGS) list.o main.o xasm.o lib.o xvm.o -lm
