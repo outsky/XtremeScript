@@ -3,13 +3,18 @@
 #include <string.h>
 #include "xasm.h"
 #include "xvm.h"
+#include "lexer.h"
 
-void usage(const char* pname) {
-    printf("compile: %s -c filename\nrun: %s -r filename\n", pname, pname);
+void usage(const char *pname) {
+    printf("%s -op filename\n", pname);
+    printf("op:\n");
+    printf("\tc: compile .xasm to .xse\n");
+    printf("\tr: run .xse\n");
+    printf("\tl: lexer .xss\n");
 }
 
-void compile(const char* filename) {
-    FILE *f = fopen(filename, "r");
+void compile_xasm(const char *filename) {
+    FILE *f = fopen(filename, "rb");
     if (f == NULL) {
         perror("Open file failed");
         exit(-1);
@@ -18,7 +23,7 @@ void compile(const char* filename) {
     long fsize = ftell(f);
     rewind(f);
 
-    char *source = (char *)malloc(fsize+1);
+    char *source = (char *)malloc(fsize + 1);
     memset(source, 0, fsize + 1);
     fread(source, sizeof(char), fsize, f);
     fclose(f); f = NULL;
@@ -32,7 +37,7 @@ void compile(const char* filename) {
     A_freestate(As);
 }
 
-void run(const char* filename) {
+void run_xse(const char *filename) {
     FILE *f = fopen(filename, "rb");
     if (f == NULL) {
         perror("Open file failed");
@@ -52,6 +57,34 @@ void run(const char* filename) {
     V_freestate(Vs);
 }
 
+void lexer_xss(const char *filename) {
+    FILE *f = fopen(filename, "rb");
+    if (f == NULL) {
+        perror("Open file failed");
+        exit(-1);
+    }
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    rewind(f);
+
+    char *source = (char *)malloc(fsize + 1);
+    memset(source, 0, fsize + 1);
+    fread(source, sizeof(char), fsize, f);
+    fclose(f); f = NULL;
+
+    L_State *Ls = L_newstate(source);
+    free(source);
+
+    for (;;) {
+        if (L_nexttoken(Ls) == L_TT_EOF) {
+            break;
+        }
+        printf("<%d>\n", Ls->curtoken.type);
+    }
+
+    L_freestate(As);
+}
+
 int main(int argc, const char **argv) {
     const char* pname = argv[0];
     if (argc != 3) {
@@ -62,9 +95,11 @@ int main(int argc, const char **argv) {
     const char *opt = argv[1];
     const char *filename = argv[2];
     if (strcmp(opt, "-c") == 0) {
-        compile(filename);
+        compile_xasm(filename);
     } else if (strcmp(opt, "-r") == 0) {
-        run(filename);
+        run_xse(filename);
+    } else if (strcmp(opt, "-l") == 0) {
+        lexer_xss(filename);
     } else {
         usage(pname);
         exit(-1);
