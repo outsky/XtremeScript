@@ -76,13 +76,14 @@ void lexer_xss(const char *filename) {
     free(source);
 
     for (;;) {
-        if (L_nexttoken(Ls) == L_TT_EOF) {
+        if (L_nexttoken(Ls) == L_TT_EOT) {
             break;
         }
-        printf("<%d>\n", Ls->curtoken.type);
+        L_printtoken(&Ls->curtoken);
+        printf("\n");
     }
 
-    L_freestate(As);
+    L_freestate(Ls);
 }
 
 int main(int argc, const char **argv) {

@@ -7,6 +7,9 @@ typedef enum {
     
     L_TT_IDENT,
 
+    L_TT_SEM,           // ;
+    L_TT_OPEN_PAR,      // (
+    L_TT_CLOSE_PAR,     // )
     L_TT_OPEN_BRACKET,  // [
     L_TT_CLOSE_BRACKET, // ]
     L_TT_COMMA,         // ,
@@ -41,38 +44,38 @@ typedef enum {
     L_TT_OP_EXP,        // ^
     L_TT_OP_INC,        // ++
     L_TT_OP_DEC,        // --
-    L_TT_OP_ADDASSIGN;  // +=
-    L_TT_OP_SUBASSIGN;  // -=
-    L_TT_OP_MULASSIGN;  // *=
-    L_TT_OP_DIVASSIGN;  // /=
-    L_TT_OP_MODASSIGN;  // %=
-    L_TT_OP_EXPASSIGN;  // ^=
+    L_TT_OP_ADDASSIGN,  // +=
+    L_TT_OP_SUBASSIGN,  // -=
+    L_TT_OP_MULASSIGN,  // *=
+    L_TT_OP_DIVASSIGN,  // /=
+    L_TT_OP_MODASSIGN,  // %=
+    L_TT_OP_EXPASSIGN,  // ^=
 
     // bitwise
-    L_TT_OP_BIT_ADD;            // &
-    L_TT_OP_BIT_OR;             // |
-    L_TT_OP_BIT_XOR;            // #
-    L_TT_OP_BIT_NOT;            // ~
-    L_TT_OP_BIT_SLEFT;          // <<
-    L_TT_OP_BIT_SRIGHT;         // >>
-    L_TT_OP_BIT_ADDASSIGN;      // &=
-    L_TT_OP_BIT_ORASSIGN;       // |=
-    L_TT_OP_BIT_XORASSIGN;      // #=
-    L_TT_OP_BIT_SLEFTASSIGN;    // <<=
-    L_TT_OP_BIT_SRIGHTASSIGN;   // >>=
+    L_TT_OP_BIT_ADD,            // &
+    L_TT_OP_BIT_OR,             // |
+    L_TT_OP_BIT_XOR,            // #
+    L_TT_OP_BIT_NOT,            // ~
+    L_TT_OP_BIT_SLEFT,          // <<
+    L_TT_OP_BIT_SRIGHT,         // >>
+    L_TT_OP_BIT_ADDASSIGN,      // &=
+    L_TT_OP_BIT_ORASSIGN,       // |=
+    L_TT_OP_BIT_XORASSIGN,      // #=
+    L_TT_OP_BIT_SLEFTASSIGN,    // <<=
+    L_TT_OP_BIT_SRIGHTASSIGN,   // >>=
 
     // logic
-    L_TT_OP_LOG_ADD;    // &&
-    L_TT_OP_LOG_OR;     // ||
-    L_TT_OP_LOG_NOT;    // !
-    L_TT_OP_LOG_EQ;     // ==
-    L_TT_OP_LOG_NEQ;    // !=
+    L_TT_OP_LOG_ADD,    // &&
+    L_TT_OP_LOG_OR,     // ||
+    L_TT_OP_LOG_NOT,    // !
+    L_TT_OP_LOG_EQ,     // ==
+    L_TT_OP_LOG_NEQ,    // !=
 
     // relational
-    L_TT_OP_L;  // <
-    L_TT_OP_G;  // >
-    L_TT_OP_LE; // <=
-    L_TT_OP_GE; // >=
+    L_TT_OP_L,  // <
+    L_TT_OP_G,  // >
+    L_TT_OP_LE, // <=
+    L_TT_OP_GE, // >=
 } L_TokenType;
 
 typedef struct {
@@ -80,7 +83,7 @@ typedef struct {
     union {
         int n;
         double f;
-        char *s;
+        const char *s;
     } u;
 } L_Token;
 
@@ -93,10 +96,12 @@ typedef struct {
     L_Token curtoken;
 } L_State;
 
+void L_printtoken(const L_Token *t);
+
 L_State* L_newstate(const char *source);
 void L_freestate(L_State *Ls);
 
-L_Token* L_nexttoken(L_State *Ls);
+L_TokenType L_nexttoken(L_State *Ls);
 void L_cachenexttoken(L_State *Ls);
 
 #endif
