@@ -7,11 +7,11 @@ ALL_O = main.o lib.o list.o xasm.o xvm.o
 xs: $(ALL_O)
 	cc -o $@ $(CFLAGS) $(ALL_O) $(LIBS)
 
-xvm.o: xvm.h xvm.c
-lib.o: lib.h lib.c
-xasm.o: xasm.h xasm.c
-list.o: list.h list.c
 main.o: main.c
+lib.o: lib.h lib.c
+list.o: list.h list.c
+xasm.o: xasm.h xasm.c
+xvm.o: xvm.h xvm.c
 
 clean:
 	rm -f *.o xs.out
