@@ -54,11 +54,12 @@ static int _opcfg[][4] = {
     {1,      A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM | A_OTM_REG, 0, 0}, // ECHO v
 };
 
+static void _freetoken(A_Token *t);
 
 static void _initops(A_State *As);
 static A_Opcode* _newop(const char *name, int code, int param);
 static void _setopflag(A_State *As, A_Opcode *op, int idx, int flag);
-static A_Opcode* _getop(A_State *As, const char *name);
+static const A_Opcode* _getop(A_State *As, const char *name);
 
 static int _add_instr(A_State *As, int opcode, list *operands);
 static int _add_str(A_State *As, const char *s);
@@ -105,10 +106,23 @@ A_State* A_newstate(char *program) {
 
 void A_freestate(A_State *As) {
     free(As->program);
+    _freetoken(&As->curtoken);
+
+    for (lnode *n = As->opcodes->head; n != NULL; n = n->next) {
+        A_Opcode *op = (A_Opcode*)n->data;
+        free(op->opflags);
+    }
     list_free(As->opcodes);
+
     list_free(As->symbols);
     list_free(As->labels);
+
+    for (lnode *n = As->instr->head; n != NULL; n = n->next) {
+        A_Instr *ins = (A_Instr*)n->data;
+        list_free(ins->operands);
+    }
     list_free(As->instr);
+
     list_free(As->str);
     list_free(As->func);
     list_free(As->api);
@@ -118,7 +132,7 @@ void A_freestate(A_State *As) {
 void A_resetstate(A_State *As) {
     As->curidx = 0;
     As->curline = 1;
-    As->curtoken.t = A_TT_INVALID;
+    _freetoken(&As->curtoken);
 }
 
 enum A_LexState {
@@ -145,6 +159,7 @@ A_TokenType A_nexttoken(A_State *As) {
     }
     int ls = A_LS_INIT;
     int begin = 0; // begin token value
+    _freetoken(&As->curtoken);
     for (;;) {
         char c = As->program[As->curidx++];
         switch (ls) {
@@ -244,6 +259,8 @@ A_TokenType A_nexttoken(A_State *As) {
                 if (c != '_' && !isalnum(c)) {
                     --As->curidx;
 
+                    _freetoken(&As->curtoken);
+
                     char *tmp = strndup(As->program + begin, As->curidx - begin);
                     if (strcasecmp(tmp, "SETSTACKSIZE") == 0) {free(tmp); As->curtoken.t = A_TT_SETSTACKSIZE; return As->curtoken.t;}
                     if (strcasecmp(tmp, "VAR") == 0) {free(tmp); As->curtoken.t = A_TT_VAR; return As->curtoken.t;}
@@ -318,7 +335,7 @@ static void _pass1(A_State *As) {
                 if (curfunc < 0) {
                     A_FATAL("instr in global scope is not allowed");
                 }
-                A_Opcode *op = _getop(As, As->curtoken.u.s);
+                const A_Opcode *op = _getop(As, As->curtoken.u.s);
                 if (op == NULL) {
                     A_FATAL("op not registered");
                 }
@@ -453,7 +470,7 @@ static void _pass2(A_State *As) {
                 break;
             }
             case A_TT_CLOSE_BRACE: {
-                A_Opcode *ret = _getop(As, "RET");
+                const A_Opcode *ret = _getop(As, "RET");
                 if (ret == NULL) {
                     A_FATAL("op `ret' not defined");
                 }
@@ -466,7 +483,7 @@ static void _pass2(A_State *As) {
                 break;
             }
             case A_TT_INSTR: {
-                A_Opcode *op = _getop(As, As->curtoken.u.s);
+                const A_Opcode *op = _getop(As, As->curtoken.u.s);
                 list *operands = list_new();
                 for (int i = 0; i < op->param; ++i) {
                     A_nexttoken(As);
@@ -585,7 +602,7 @@ void A_createbin(A_State *As) {
     // string table
     fwrite(&As->str->count, 4, 1, f);
     for (lnode *n = As->str->head; n != NULL; n = n->next) {
-        char *s = (char*)n->data;
+        const char *s = (const char*)n->data;
         num = strlen(s);
         fwrite(&num, 4, 1, f);
         fwrite(s, 1, num, f);
@@ -648,7 +665,8 @@ static int _add_str(A_State *As, const char *s) {
     if (idx >= 0) {
         return idx;
     }
-    return list_pushback(As->str, (void*)s);
+    const char *snew = strdup(s);
+    return list_pushback(As->str, (void*)snew);
 }
 
 static int _get_stridx(A_State *As, const char *s) {
@@ -723,6 +741,13 @@ static int _add_instr(A_State *As, int opcode, list *operands) {
     return list_pushback(As->instr, i);
 }
 
+static void _freetoken(A_Token *t) {
+    if (t->t == A_TT_STRING || t->t == A_TT_IDENT || t->t == A_TT_INSTR) {
+        free(t->u.s); t->u.s = NULL;
+    }
+    t->t = A_TT_INVALID;
+}
+
 static void _initops(A_State *As) { 
     for (int i = 0; i < sizeof(A_opnames) / sizeof(char*); ++i) {
         const char* name = A_opnames[i];
@@ -760,7 +785,7 @@ static void _setopflag(A_State *As, A_Opcode *op, int idx, int flag) {
     op->opflags[idx] = flag;
 }
 
-static A_Opcode* _getop(A_State *As, const char *name) {
+static const A_Opcode* _getop(A_State *As, const char *name) {
     for (lnode *n = As->opcodes->head; n != NULL; n = n->next) {
         A_Opcode *op = (A_Opcode*)n->data;
         if (strcasecmp(name, op->name) == 0) {

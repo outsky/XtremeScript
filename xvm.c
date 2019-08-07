@@ -8,6 +8,7 @@
 #define V_DEBUG 1
 
 /* static function declarations */
+static void _freevalue(V_Value *v);
 static void _pvalue(const V_Value *v);
 static void _pstatus(V_State *Vs);
 
@@ -28,6 +29,11 @@ static V_Value* _getopvalue(V_State *Vs, int idx);
 static V_Func* _getfunc(V_State *Vs, int idx);
 
 /* static function definations */
+static void _freevalue(V_Value *v) {
+    if (v->type == A_OT_STRING) {
+        free(v->u.s); v->u.s = NULL;
+    }
+}
 static void _pvalue(const V_Value *v) {
     switch (v->type) {
         case A_OT_NULL: {
@@ -137,9 +143,7 @@ static V_Func* _getfunc(V_State *Vs, int idx) {
     return &Vs->func[idx];
 }
 static void _copy(V_Value *dest, const V_Value *src) {
-    if (dest->type == A_OT_STRING) {
-        free(dest->u.s);
-    }
+    _freevalue(dest);
     *dest = *src;
     if (dest->type == A_OT_STRING) {
         dest->u.s = strdup(src->u.s);
@@ -434,10 +438,19 @@ V_State* V_newstate() {
 }
 
 void V_freestate(V_State *Vs) {
+    for (int i = 0; i < Vs->stack.size; ++i) {
+        _freevalue(&Vs->stack.nodes[i]);
+    }
     free(Vs->stack.nodes);
 
     for (int i = 0; i < Vs->instr.count; ++i) {
         V_Instr *ins = Vs->instr.instr + i;
+        for (int j = 0; j < ins->opcount; ++j) {
+            V_Value *v = &ins->ops[j];
+            if (v->type == A_OT_STRING) {
+                free(v->u.s);
+            }
+        }
         free(ins->ops);
     }
     free(Vs->instr.instr);
@@ -479,7 +492,9 @@ int V_load(V_State *Vs, FILE *f) {
         V_Instr *ins = Vs->instr.instr + i;
         fread(&ins->opcode, 2, 1, f);
         fread(&ins->opcount, 1, 1, f);
-        ins->ops = (V_Value*)malloc(sizeof(V_Value) * ins->opcount);
+        if (ins->opcount > 0) {
+            ins->ops = (V_Value*)malloc(sizeof(V_Value) * ins->opcount);
+        }
         for (int j = 0; j < ins->opcount; ++j) {
             V_Value *v = ins->ops + j;
             v->type = 0;
@@ -509,7 +524,7 @@ int V_load(V_State *Vs, FILE *f) {
         for (int j = 0; j < Vs->instr.count; ++j) {
             V_Instr *ins = Vs->instr.instr + j;
             for (int k = 0; k < ins->opcount; ++k) {
-                V_Value *v = ins->ops + k;
+                V_Value *v = &ins->ops[k];
                 if (v->type == A_OT_STRING && v->u.n == i) {
                     v->u.s = strdup(tmpstr);
                 }
@@ -532,7 +547,9 @@ int V_load(V_State *Vs, FILE *f) {
 
     // api
     fread(&Vs->api.count, 4, 1, f);
-    Vs->api.api = (char**)malloc(sizeof(char*) * Vs->api.count);
+    if (Vs->api.count > 0) {
+        Vs->api.api = (char**)malloc(sizeof(char*) * Vs->api.count);
+    }
     for (int i = 0; i < Vs->api.count; ++i) {
         fread(&n, 1, 1, f);
         Vs->api.api[i] = (char*)malloc(sizeof(char) * (n + 1));
