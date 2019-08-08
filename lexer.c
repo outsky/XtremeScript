@@ -27,6 +27,11 @@ typedef struct {
     L_TokenType t3_pre;
 } _OpTrans;
 
+typedef struct {
+    const char *s;
+    L_TokenType t;
+} _Keyword;
+
 _OpTrans _opcfg[] = {
     /*
      op1  t1                op2_1 t2_1                op2_2 t2_2                op3  t3                     t3_pre
@@ -49,6 +54,21 @@ _OpTrans _opcfg[] = {
     {0,   0,                0,    0,                  0,    0,                  0,   0,                     0},
 };
 
+_Keyword _keywordcfg[] = {
+    {"var",         L_TT_VAR},
+    {"true",        L_TT_TRUE},
+    {"false",       L_TT_FALSE},
+    {"if",          L_TT_IF},
+    {"else",        L_TT_ELSE},
+    {"break",       L_TT_BREAK},
+    {"continue",    L_TT_CONTINUE},
+    {"for",         L_TT_FOR},
+    {"while",       L_TT_WHILE},
+    {"func",        L_TT_FUNC},
+    {"return",      L_TT_RETURN},
+    {NULL,          0},
+};
+
 #define L_FATAL(msg) printf("<line: %d>\n", Ls->curline); snapshot(Ls->source, Ls->curidx); fatal(__FUNCTION__, __LINE__, msg)
 
 static char _peek(L_State *Ls, int forward);
@@ -57,6 +77,7 @@ static int _isnumterminal(char c);
 static int _isidterminal(char c);
 
 static const _OpTrans* _getopcfg(char op);
+static L_TokenType _getkeywordtt(const char *s);
 
 static char _peek(L_State *Ls, int forward) {
     long idx = Ls->curidx + forward;
@@ -88,6 +109,18 @@ static const _OpTrans* _getopcfg(char op) {
         }
     }
 
+}
+static L_TokenType _getkeywordtt(const char *s) {
+    int i = 0;
+    for (;;) {
+        const _Keyword *cfg = &_keywordcfg[i++];
+        if (cfg->s == NULL) {
+            return L_TT_INVALID;
+        }
+        if (strcmp(s, cfg->s) == 0) {
+            return cfg->t;
+        }
+    }
 }
 void _freetoken(L_Token *t) {
     if (t->type == L_TT_STRING || t->type == L_TT_IDENT) {
@@ -239,6 +272,12 @@ L_TokenType L_nexttoken(L_State *Ls) {
                 if (_isidterminal(c)) {
                     --Ls->curidx;
                     const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin);
+                    L_TokenType kw = _getkeywordtt(tmp);
+                    if (kw != L_TT_INVALID) {
+                        free((void*)tmp);
+                        Ls->curtoken.type = kw;
+                        return Ls->curtoken.type;
+                    }
                     Ls->curtoken.type = L_TT_IDENT;
                     Ls->curtoken.u.s = tmp;
                     return Ls->curtoken.type;
