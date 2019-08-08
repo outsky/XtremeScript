@@ -34,38 +34,40 @@ typedef enum {
     L_TT_FLOAT,
     L_TT_STRING,
 
+    L_TT_OP_ASS,        // =
+
     // arithmetic
     L_TT_OP_ADD,        // +
     L_TT_OP_SUB,        // -
-    L_TT_OP_CONCAT,     // $
     L_TT_OP_MUL,        // *
     L_TT_OP_DIV,        // /
     L_TT_OP_MOD,        // %
     L_TT_OP_EXP,        // ^
+    L_TT_OP_CONCAT,     // $
     L_TT_OP_INC,        // ++
     L_TT_OP_DEC,        // --
-    L_TT_OP_ADDASSIGN,  // +=
-    L_TT_OP_SUBASSIGN,  // -=
-    L_TT_OP_MULASSIGN,  // *=
-    L_TT_OP_DIVASSIGN,  // /=
-    L_TT_OP_MODASSIGN,  // %=
-    L_TT_OP_EXPASSIGN,  // ^=
+    L_TT_OP_ADDASS,     // +=
+    L_TT_OP_SUBASS,     // -=
+    L_TT_OP_MULASS,     // *=
+    L_TT_OP_DIVASS,     // /=
+    L_TT_OP_MODASS,     // %=
+    L_TT_OP_EXPASS,     // ^=
 
     // bitwise
-    L_TT_OP_BIT_ADD,            // &
+    L_TT_OP_BIT_AND,            // &
     L_TT_OP_BIT_OR,             // |
     L_TT_OP_BIT_XOR,            // #
     L_TT_OP_BIT_NOT,            // ~
     L_TT_OP_BIT_SLEFT,          // <<
     L_TT_OP_BIT_SRIGHT,         // >>
-    L_TT_OP_BIT_ADDASSIGN,      // &=
-    L_TT_OP_BIT_ORASSIGN,       // |=
-    L_TT_OP_BIT_XORASSIGN,      // #=
-    L_TT_OP_BIT_SLEFTASSIGN,    // <<=
-    L_TT_OP_BIT_SRIGHTASSIGN,   // >>=
+    L_TT_OP_BIT_ANDASS,         // &=
+    L_TT_OP_BIT_ORASS,          // |=
+    L_TT_OP_BIT_XORASS,         // #=
+    L_TT_OP_BIT_SLEFTASS,       // <<=
+    L_TT_OP_BIT_SRIGHTASS,      // >>=
 
     // logic
-    L_TT_OP_LOG_ADD,    // &&
+    L_TT_OP_LOG_AND,    // &&
     L_TT_OP_LOG_OR,     // ||
     L_TT_OP_LOG_NOT,    // !
     L_TT_OP_LOG_EQ,     // ==

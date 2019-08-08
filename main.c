@@ -75,12 +75,18 @@ void lexer_xss(const char *filename) {
     L_State *Ls = L_newstate(source);
     free(source);
 
+    int curline = Ls->curline;
     for (;;) {
         if (L_nexttoken(Ls) == L_TT_EOT) {
+            printf("<EOT>\n");
             break;
         }
+        if (curline != Ls->curline) {
+            curline = Ls->curline;
+            printf("\n");
+        }
         L_printtoken(&Ls->curtoken);
-        printf("\n");
+        printf(" ");
     }
 
     L_freestate(Ls);
