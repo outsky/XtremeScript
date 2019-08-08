@@ -13,6 +13,8 @@ typedef enum {
     L_LS_IDENT,
     L_LS_STRHALF,   // "asf
     L_LS_STRTRANS,  // "sdf\?
+    L_LS_C_CMT,     // /* xxx
+    L_LS_CPP_CMT,   // // xxx
 } _LexState;
 
 typedef struct {
@@ -169,6 +171,19 @@ L_TokenType L_nexttoken(L_State *Ls) {
                 if (isspace(c)) {
                     break;
                 }
+                if (c == '/') {
+                    char n1 = _peek(Ls, 0);
+                    if (n1 == '*') {
+                        ++Ls->curidx;
+                        ls = L_LS_C_CMT;
+                        break;
+                    }
+                    if (n1 == '/') {
+                        ++Ls->curidx;
+                        ls = L_LS_CPP_CMT;
+                        break;
+                    }
+                }
                 if (isdigit(c)) {
                     ls = L_LS_INT;
                     begin = Ls->curidx - 1;
@@ -306,6 +321,19 @@ L_TokenType L_nexttoken(L_State *Ls) {
                     break;
                 }
                 L_FATAL("unexpected char");
+            } break;
+
+            case L_LS_C_CMT: {
+                if (c == '*' && _peek(Ls, 0) == '/') {
+                    ls = L_LS_INIT;
+                    break;
+                }
+            } break;
+            case L_LS_CPP_CMT: {
+                if (c == '\n') {
+                    ls = L_LS_INIT;
+                    break;
+                }
             } break;
         }
     }
