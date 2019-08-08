@@ -199,8 +199,8 @@ L_TokenType L_nexttoken(L_State *Ls) {
                     break;
                 }
                 if (_isnumterminal(c)) {
-                    const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin);
                     --Ls->curidx;
+                    const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin);
                     Ls->curtoken.type = L_TT_INT;
                     Ls->curtoken.u.n = atoi(tmp);
                     free((void*)tmp);
@@ -222,8 +222,8 @@ L_TokenType L_nexttoken(L_State *Ls) {
                     break;
                 }
                 if (_isnumterminal(c)) {
-                    const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin);
                     --Ls->curidx;
+                    const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin);
                     Ls->curtoken.type = L_TT_FLOAT;
                     Ls->curtoken.u.f = atof(tmp);
                     free((void*)tmp);
@@ -237,8 +237,8 @@ L_TokenType L_nexttoken(L_State *Ls) {
                     break;
                 }
                 if (_isidterminal(c)) {
-                    const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin - 1);
                     --Ls->curidx;
+                    const char *tmp = strndup(Ls->source + begin, Ls->curidx - begin);
                     Ls->curtoken.type = L_TT_IDENT;
                     Ls->curtoken.u.s = tmp;
                     return Ls->curtoken.type;
