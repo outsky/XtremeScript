@@ -4,6 +4,7 @@
 #include "xasm.h"
 #include "xvm.h"
 #include "lexer.h"
+#include "parser.h"
 
 void usage(const char *pname) {
     printf("%s -op filename\n", pname);
@@ -11,6 +12,7 @@ void usage(const char *pname) {
     printf("\tc: compile .xasm to .xse\n");
     printf("\tr: run .xse\n");
     printf("\tl: lexer .xss\n");
+    printf("\tp: parse .xss\n");
 }
 
 void compile_xasm(const char *filename) {
@@ -92,6 +94,30 @@ void lexer_xss(const char *filename) {
     L_freestate(Ls);
 }
 
+void parse_xss(const char *filename) {
+    FILE *f = fopen(filename, "rb");
+    if (f == NULL) {
+        perror("Open file failed");
+        exit(-1);
+    }
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    rewind(f);
+
+    char *source = (char *)malloc(fsize + 1);
+    memset(source, 0, fsize + 1);
+    fread(source, sizeof(char), fsize, f);
+    fclose(f); f = NULL;
+
+    L_State *Ls = L_newstate(source);
+    free(source);
+
+    P_State *ps = P_newstate(Ls);
+    P_parse(ps);
+
+    P_freestate(ps);
+}
+
 int main(int argc, const char **argv) {
     const char* pname = argv[0];
     if (argc != 3) {
@@ -107,6 +133,8 @@ int main(int argc, const char **argv) {
         run_xse(filename);
     } else if (strcmp(opt, "-l") == 0) {
         lexer_xss(filename);
+    } else if (strcmp(opt, "-p") == 0) {
+        parse_xss(filename);
     } else {
         usage(pname);
         exit(-1);
