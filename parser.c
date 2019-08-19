@@ -12,6 +12,7 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
 static int _has_str(P_State *ps, const char *s);
 static void _add_str(P_State *ps, const char *s);
 
+static P_Func* _get_func_byidx(P_State *ps, int fidx);
 static P_Func* _get_func(P_State *ps, const char *name);
 static void _add_func(P_State *ps, const char *name, int param);
 
@@ -57,6 +58,18 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
     printf("symbol %d: %s %d %d %d\n", ps->symbols->count - 1, name, size, scope, isparam);
 }
 
+static P_Func* _get_func_byidx(P_State *ps, int fidx) {
+    if (fidx >= ps->funcs->count) {
+        return NULL;
+    }
+
+    lnode *n = ps->funcs->head;
+    for (int i = 0; i < fidx; ++i) {
+        n = n->next;
+    }
+    return (P_Func*)n->data;
+}
+
 static P_Func* _get_func(P_State *ps, const char *name) {
     for (lnode *n = ps->funcs->head; n != NULL; n = n->next) {
         P_Func *f = (P_Func*)n->data;
@@ -82,6 +95,8 @@ static void _add_func(P_State *ps, const char *name, int param) {
 P_State* P_newstate(L_State *ls) {
     P_State *ps = (P_State*)malloc(sizeof(*ps));
     ps->ls = ls;
+    ps->curfunc = -1;
+
     ps->symbols = list_new();
     ps->funcs = list_new();
     ps->strs = list_new();
@@ -96,8 +111,84 @@ void P_freestate(P_State *ps) {
     free(ps);
 }
 
+// parse statements
+static void _parse_var(P_State *ps);
+static void _parse_func(P_State *ps);
+
+static void _parse_var(P_State *ps) {
+    if (L_nexttoken(ps->ls) != L_TT_IDENT) {
+        P_FATAL("ident expected by `var'");
+    }
+    char *id = strdup(ps->ls->curtoken.u.s);
+
+    int size = 1;
+    if (L_nexttoken(ps->ls) == L_TT_OPEN_BRACKET) {
+        if (L_nexttoken(ps->ls) != L_TT_INT) {
+            free(id);
+            P_FATAL("int expected by array declare");
+        }
+        size = ps->ls->curtoken.u.n;
+        if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
+            free(id);
+            P_FATAL("`]' expected by array declare");
+        }
+    }
+    L_cachenexttoken(ps->ls);
+
+    _add_symbol(ps, id, size, ps->curfunc, 0);
+    free(id);
+}
+
+static void _parse_func(P_State *ps) {
+    ++ps->curfunc;
+    if (L_nexttoken(ps->ls) != L_TT_IDENT) {
+        P_FATAL("ident expected by `func'");
+    }
+    char *id = strdup(ps->ls->curtoken.u.s);
+    
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
+        free(id);
+        P_FATAL("`(' expected by func declare");
+    }
+
+    int param = 0;
+    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+        L_cachenexttoken(ps->ls);
+        for (;;) {
+            L_TokenType tt1 = L_nexttoken(ps->ls);
+            if (tt1 != L_TT_IDENT) {
+                free(id);
+                P_FATAL("ident expected by func declare");
+            }
+            _add_symbol(ps, ps->ls->curtoken.u.s, 1, ps->curfunc, 1);
+            ++param;
+            if (L_nexttoken(ps->ls) != L_TT_COMMA) {
+                L_cachenexttoken(ps->ls);
+                break;
+            }
+        }
+        if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+            free(id);
+            P_FATAL("`)' expected by func declare");
+        }
+    }
+    _add_func(ps, id, param);
+    free(id);
+
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
+        P_FATAL("`{' expected by func declare");
+    }
+}
+
+void P_add_func_icode(P_State *ps, int fidx, void *icode) {
+    P_Func *f = _get_func_byidx(ps, fidx);
+    if (f == NULL) {
+        P_FATAL("func is NULL");
+    }
+    list_pushback(f->icodes, icode);
+}
+
 void P_parse(P_State *ps) {
-    int curfunc = -1;
     for (;;) {
         L_TokenType tt = L_nexttoken(ps->ls);
         switch (tt) {
@@ -107,68 +198,18 @@ void P_parse(P_State *ps) {
             case L_TT_EOT: {return;} break;
 
             case L_TT_VAR: {
-                if (L_nexttoken(ps->ls) != L_TT_IDENT) {
-                    P_FATAL("ident expected by `var'");
-                }
-                char *id = strdup(ps->ls->curtoken.u.s);
-
-                int size = 1;
-                if (L_nexttoken(ps->ls) == L_TT_OPEN_BRACKET) {
-                    if (L_nexttoken(ps->ls) != L_TT_INT) {
-                        free(id);
-                        P_FATAL("int expected by array declare");
-                    }
-                    size = ps->ls->curtoken.u.n;
-                    if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
-                        free(id);
-                        P_FATAL("`]' expected by array declare");
-                    }
-                }
-                L_cachenexttoken(ps->ls);
-
-                _add_symbol(ps, id, size, curfunc, 0);
-                free(id);
+                _parse_var(ps);
             } break;
 
             case L_TT_FUNC: {
-                ++curfunc;
-                if (L_nexttoken(ps->ls) != L_TT_IDENT) {
-                    P_FATAL("ident expected by `func'");
-                }
-                char *id = strdup(ps->ls->curtoken.u.s);
-                
-                if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
-                    free(id);
-                    P_FATAL("`(' expected by func declare");
-                }
+                _parse_func(ps);
+            } break;
 
-                int param = 0;
-                if (L_nexttoken(ps->ls) == L_TT_CLOSE_PAR) {
-                    _add_func(ps, id, param);
-                    free(id);
-                    break;
+            case L_TT_CLOSE_BRACE: {
+                if (ps->curfunc < 0) {
+                    P_FATAL("unexpect `}'");
                 }
-
-                L_cachenexttoken(ps->ls);
-                for (;;) {
-                    L_TokenType tt1 = L_nexttoken(ps->ls);
-                    if (tt1 != L_TT_IDENT) {
-                        free(id);
-                        P_FATAL("ident expected by func declare");
-                    }
-                    _add_symbol(ps, ps->ls->curtoken.u.s, 1, curfunc, 1);
-                    ++param;
-                    if (L_nexttoken(ps->ls) != L_TT_COMMA) {
-                        L_cachenexttoken(ps->ls);
-                        break;
-                    }
-                }
-                if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
-                    free(id);
-                    P_FATAL("`)' expected by func declare");
-                }
-                _add_func(ps, id, param);
-                free(id);
+                ps->curfunc = -1;
             } break;
 
             case L_TT_STRING: {
@@ -181,3 +222,4 @@ void P_parse(P_State *ps) {
         }
     }
 }
+
