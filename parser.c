@@ -55,7 +55,7 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
     s->scope = scope;
     s->isparam = isparam;
     list_pushback(ps->symbols, s);
-    printf("symbol %d: %s %d %d %d\n", ps->symbols->count - 1, name, size, scope, isparam);
+    printf("symbol %s: idx %d, size %d, func %d, isparam %d\n", name, ps->symbols->count - 1, size, scope, isparam);
 }
 
 static P_Func* _get_func_byidx(P_State *ps, int fidx) {
@@ -89,7 +89,7 @@ static void _add_func(P_State *ps, const char *name, int param) {
     strcpy(f->name, name);
     f->param = param;
     list_pushback(ps->funcs, f);
-    printf("func %d: %s %d\n", ps->funcs->count - 1, name, param);
+    printf("func %s: idx %d, param %d\n", name, ps->funcs->count - 1, param);
 }
 
 P_State* P_newstate(L_State *ls) {
@@ -120,13 +120,14 @@ static void _parse_func(P_State *ps);
 
 static void _parse_statement(P_State *ps) {
     L_TokenType tt = L_nexttoken(ps->ls);
-    if (tt == L_TT_SEM) {
-        return;
+    switch (tt) {
+        case L_TT_SEM: {return;}
+        case L_TT_OPEN_BRACE: {return _parse_block(ps);}
+        case L_TT_FUNC: {return _parse_func(ps);}
+        default: {
+            P_FATAL("unexpected token");
+        } break;
     }
-    if (tt == L_TT_OPEN_BRACE) {
-        return _parse_block(ps);
-    }
-    P_FATAL("unexpected token");
 }
 
 static void _parse_block(P_State *ps) {
@@ -205,6 +206,7 @@ static void _parse_func(P_State *ps) {
     if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
         P_FATAL("`{' expected by func declare");
     }
+    _parse_block(ps);
 }
 
 void P_add_func_icode(P_State *ps, int fidx, void *icode) {
