@@ -28,56 +28,57 @@ typedef enum {
     L_TT_WHILE,
     L_TT_FUNC,  // 20
     L_TT_RETURN,
+    L_TT_HOST,
 
     // types
     L_TT_INT,
     L_TT_FLOAT,
-    L_TT_STRING,
+    L_TT_STRING,    // 25
 
-    L_TT_OP_ASS,        // =    25
+    L_TT_OP_ASS,        // =
 
     // arithmetic
     L_TT_OP_ADD,        // +
     L_TT_OP_SUB,        // -
     L_TT_OP_MUL,        // *
-    L_TT_OP_DIV,        // /
-    L_TT_OP_MOD,        // %    30
+    L_TT_OP_DIV,        // /    30
+    L_TT_OP_MOD,        // %
     L_TT_OP_EXP,        // ^
     L_TT_OP_CONCAT,     // $
     L_TT_OP_INC,        // ++
-    L_TT_OP_DEC,        // --
-    L_TT_OP_ADDASS,     // +=   35
+    L_TT_OP_DEC,        // --   35
+    L_TT_OP_ADDASS,     // +=
     L_TT_OP_SUBASS,     // -=
     L_TT_OP_MULASS,     // *=
     L_TT_OP_DIVASS,     // /=
-    L_TT_OP_MODASS,     // %=
-    L_TT_OP_EXPASS,     // ^=   40
+    L_TT_OP_MODASS,     // %=   40
+    L_TT_OP_EXPASS,     // ^=
 
     // bitwise
     L_TT_OP_BIT_AND,            // &
     L_TT_OP_BIT_OR,             // |
     L_TT_OP_BIT_XOR,            // #
-    L_TT_OP_BIT_NOT,            // ~
-    L_TT_OP_BIT_SLEFT,          // <<   45
+    L_TT_OP_BIT_NOT,            // ~    45
+    L_TT_OP_BIT_SLEFT,          // <<
     L_TT_OP_BIT_SRIGHT,         // >>
     L_TT_OP_BIT_ANDASS,         // &=
     L_TT_OP_BIT_ORASS,          // |=
-    L_TT_OP_BIT_XORASS,         // #=
-    L_TT_OP_BIT_SLEFTASS,       // <<=  50
+    L_TT_OP_BIT_XORASS,         // #=   50
+    L_TT_OP_BIT_SLEFTASS,       // <<=
     L_TT_OP_BIT_SRIGHTASS,      // >>=
 
     // logic
     L_TT_OP_LOG_AND,    // &&
     L_TT_OP_LOG_OR,     // ||
-    L_TT_OP_LOG_NOT,    // !
-    L_TT_OP_LOG_EQ,     // ==   55
+    L_TT_OP_LOG_NOT,    // !    55
+    L_TT_OP_LOG_EQ,     // ==
     L_TT_OP_LOG_NEQ,    // !=
 
     // relational
     L_TT_OP_L,  // <
     L_TT_OP_G,  // >
-    L_TT_OP_LE, // <=
-    L_TT_OP_GE, // >=   60
+    L_TT_OP_LE, // <=   60
+    L_TT_OP_GE, // >=
 } L_TokenType;
 
 typedef struct {

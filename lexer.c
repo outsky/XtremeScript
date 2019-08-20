@@ -68,6 +68,7 @@ _Keyword _keywordcfg[] = {
     {"while",       L_TT_WHILE},
     {"func",        L_TT_FUNC},
     {"return",      L_TT_RETURN},
+    {"host",        L_TT_HOST},
     {NULL,          0},
 };
 
