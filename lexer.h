@@ -9,24 +9,24 @@ typedef enum {
 
     L_TT_SEM,           // ;
     L_TT_OPEN_PAR,      // (
-    L_TT_CLOSE_PAR,     // )
+    L_TT_CLOSE_PAR,     // )    5
     L_TT_OPEN_BRACKET,  // [
     L_TT_CLOSE_BRACKET, // ]
     L_TT_COMMA,         // ,
     L_TT_OPEN_BRACE,    // {
-    L_TT_CLOSE_BRACE,   // }
+    L_TT_CLOSE_BRACE,   // }    10
 
     // keywords
     L_TT_VAR,
     L_TT_TRUE,
     L_TT_FALSE,
     L_TT_IF,
-    L_TT_ELSE,
+    L_TT_ELSE,  // 15
     L_TT_BREAK,
     L_TT_CONTINUE,
     L_TT_FOR,
     L_TT_WHILE,
-    L_TT_FUNC,
+    L_TT_FUNC,  // 20
     L_TT_RETURN,
 
     // types
@@ -34,50 +34,50 @@ typedef enum {
     L_TT_FLOAT,
     L_TT_STRING,
 
-    L_TT_OP_ASS,        // =
+    L_TT_OP_ASS,        // =    25
 
     // arithmetic
     L_TT_OP_ADD,        // +
     L_TT_OP_SUB,        // -
     L_TT_OP_MUL,        // *
     L_TT_OP_DIV,        // /
-    L_TT_OP_MOD,        // %
+    L_TT_OP_MOD,        // %    30
     L_TT_OP_EXP,        // ^
     L_TT_OP_CONCAT,     // $
     L_TT_OP_INC,        // ++
     L_TT_OP_DEC,        // --
-    L_TT_OP_ADDASS,     // +=
+    L_TT_OP_ADDASS,     // +=   35
     L_TT_OP_SUBASS,     // -=
     L_TT_OP_MULASS,     // *=
     L_TT_OP_DIVASS,     // /=
     L_TT_OP_MODASS,     // %=
-    L_TT_OP_EXPASS,     // ^=
+    L_TT_OP_EXPASS,     // ^=   40
 
     // bitwise
     L_TT_OP_BIT_AND,            // &
     L_TT_OP_BIT_OR,             // |
     L_TT_OP_BIT_XOR,            // #
     L_TT_OP_BIT_NOT,            // ~
-    L_TT_OP_BIT_SLEFT,          // <<
+    L_TT_OP_BIT_SLEFT,          // <<   45
     L_TT_OP_BIT_SRIGHT,         // >>
     L_TT_OP_BIT_ANDASS,         // &=
     L_TT_OP_BIT_ORASS,          // |=
     L_TT_OP_BIT_XORASS,         // #=
-    L_TT_OP_BIT_SLEFTASS,       // <<=
+    L_TT_OP_BIT_SLEFTASS,       // <<=  50
     L_TT_OP_BIT_SRIGHTASS,      // >>=
 
     // logic
     L_TT_OP_LOG_AND,    // &&
     L_TT_OP_LOG_OR,     // ||
     L_TT_OP_LOG_NOT,    // !
-    L_TT_OP_LOG_EQ,     // ==
+    L_TT_OP_LOG_EQ,     // ==   55
     L_TT_OP_LOG_NEQ,    // !=
 
     // relational
     L_TT_OP_L,  // <
     L_TT_OP_G,  // >
     L_TT_OP_LE, // <=
-    L_TT_OP_GE, // >=
+    L_TT_OP_GE, // >=   60
 } L_TokenType;
 
 typedef struct {

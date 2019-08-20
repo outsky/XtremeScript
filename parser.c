@@ -130,6 +130,7 @@ static void _parse_statement(P_State *ps) {
             P_FATAL("unexpected end of file");
         } break;
         default: {
+            L_printtoken(&ps->ls->curtoken);
             P_FATAL("unexpected token");
         } break;
     }
