@@ -131,6 +131,9 @@ static void _parse_statement(P_State *ps) {
 }
 
 static void _parse_block(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("code blocks illegal in global scope");
+    }
     for (;;) {
         if (L_nexttoken(ps->ls) == L_TT_CLOSE_BRACE) {
             break;
