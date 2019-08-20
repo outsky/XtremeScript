@@ -123,23 +123,19 @@ static void _parse_statement(P_State *ps) {
     if (tt == L_TT_SEM) {
         return;
     }
-    L_cachenexttoken(ps->ls);
-    if (tt == L_TT_CLOSE_BRACE) {
-        return;
+    if (tt == L_TT_OPEN_BRACE) {
+        return _parse_block(ps);
     }
-    _parse_block(ps);
+    P_FATAL("unexpected token");
 }
 
 static void _parse_block(P_State *ps) {
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
-        P_FATAL("`{' expected by block");
-    }
     for (;;) {
-        _parse_statement(ps);
         if (L_nexttoken(ps->ls) == L_TT_CLOSE_BRACE) {
             break;
         }
         L_cachenexttoken(ps->ls);
+        _parse_statement(ps);
     }
 }
 
