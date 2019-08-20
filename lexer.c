@@ -332,6 +332,7 @@ L_TokenType L_nexttoken(L_State *Ls) {
 
             case L_LS_C_CMT: {
                 if (c == '*' && _peek(Ls, 0) == '/') {
+                    ++Ls->curidx;
                     ls = L_LS_INIT;
                     break;
                 }
