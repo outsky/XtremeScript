@@ -114,9 +114,9 @@ void P_freestate(P_State *ps) {
 // parse statements
 static void _parse_statement(P_State *ps);
 static void _parse_block(P_State *ps);
-
-static void _parse_var(P_State *ps);
 static void _parse_func(P_State *ps);
+static void _parse_var(P_State *ps);
+static void _parse_host(P_State *ps);
 
 static void _parse_statement(P_State *ps) {
     L_TokenType tt = L_nexttoken(ps->ls);
@@ -125,6 +125,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_OPEN_BRACE: {_parse_block(ps);} break;
         case L_TT_FUNC: {_parse_func(ps);} break;
         case L_TT_VAR: {_parse_var(ps);} break;
+        case L_TT_HOST: {_parse_host(ps);} break;
 
         case L_TT_EOT: {
             P_FATAL("unexpected end of file");
@@ -221,6 +222,9 @@ static void _parse_func(P_State *ps) {
     }
     _parse_block(ps);
     ps->curfunc = -1;
+}
+
+static void _parse_host(P_State *ps) {
 }
 
 void P_add_func_icode(P_State *ps, int fidx, void *icode) {
