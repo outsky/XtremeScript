@@ -121,9 +121,9 @@ static void _parse_func(P_State *ps);
 static void _parse_statement(P_State *ps) {
     L_TokenType tt = L_nexttoken(ps->ls);
     switch (tt) {
-        case L_TT_SEM: {return;}
-        case L_TT_OPEN_BRACE: {return _parse_block(ps);}
-        case L_TT_FUNC: {return _parse_func(ps);}
+        case L_TT_SEM: {} break;
+        case L_TT_OPEN_BRACE: {_parse_block(ps);} break;
+        case L_TT_FUNC: {_parse_func(ps);} break;
         default: {
             P_FATAL("unexpected token");
         } break;
@@ -207,6 +207,7 @@ static void _parse_func(P_State *ps) {
         P_FATAL("`{' expected by func declare");
     }
     _parse_block(ps);
+    ps->curfunc = -1;
 }
 
 void P_add_func_icode(P_State *ps, int fidx, void *icode) {
