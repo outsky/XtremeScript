@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
     char name[MAX_SYMBOL_LEN];
     int param;
+    int ishost;
     list *icodes;
 } P_Func;
 

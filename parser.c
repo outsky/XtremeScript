@@ -14,7 +14,7 @@ static void _add_str(P_State *ps, const char *s);
 
 static P_Func* _get_func_byidx(P_State *ps, int fidx);
 static P_Func* _get_func(P_State *ps, const char *name);
-static void _add_func(P_State *ps, const char *name, int param);
+static void _add_func(P_State *ps, const char *name, int param, int ishost);
 
 static int _has_str(P_State *ps, const char *s) {
     for (lnode *n = ps->strs->head; n != NULL; n = n->next) {
@@ -80,7 +80,7 @@ static P_Func* _get_func(P_State *ps, const char *name) {
     return NULL;
 }
 
-static void _add_func(P_State *ps, const char *name, int param) {
+static void _add_func(P_State *ps, const char *name, int param, int ishost) {
     if (_get_func(ps, name)) {
         P_FATAL("redefined func");
     }
@@ -88,8 +88,9 @@ static void _add_func(P_State *ps, const char *name, int param) {
     P_Func *f = (P_Func*)malloc(sizeof(*f));
     strcpy(f->name, name);
     f->param = param;
+    f->ishost = ishost;
     list_pushback(ps->funcs, f);
-    printf("func %s: idx %d, param %d\n", name, ps->funcs->count - 1, param);
+    printf("func %s: idx %d, param %d, ishost %d\n", name, ps->funcs->count - 1, param, ishost);
 }
 
 P_State* P_newstate(L_State *ls) {
@@ -214,7 +215,7 @@ static void _parse_func(P_State *ps) {
             P_FATAL("`)' expected by func declare");
         }
     }
-    _add_func(ps, id, param);
+    _add_func(ps, id, param, 0);
     free(id);
 
     if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
@@ -225,6 +226,22 @@ static void _parse_func(P_State *ps) {
 }
 
 static void _parse_host(P_State *ps) {
+    if (L_nexttoken(ps->ls) != L_TT_IDENT) {
+        P_FATAL("ident expected by host import");
+    }
+    char *id = strdup(ps->ls->curtoken.u.s);
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
+        P_FATAL("`(' expected by host import");
+    }
+    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+        P_FATAL("`)' expected by host import");
+    }
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        P_FATAL("`;' expected by host import");
+    }
+
+    _add_func(ps, id, 0, 1);
+    free(id);
 }
 
 void P_add_func_icode(P_State *ps, int fidx, void *icode) {
