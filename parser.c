@@ -125,6 +125,10 @@ static void _parse_statement(P_State *ps) {
         case L_TT_OPEN_BRACE: {_parse_block(ps);} break;
         case L_TT_FUNC: {_parse_func(ps);} break;
         case L_TT_VAR: {_parse_var(ps);} break;
+
+        case L_TT_EOT: {
+            P_FATAL("unexpected end of file");
+        } break;
         default: {
             P_FATAL("unexpected token");
         } break;
