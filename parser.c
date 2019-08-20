@@ -55,7 +55,7 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
     s->scope = scope;
     s->isparam = isparam;
     list_pushback(ps->symbols, s);
-    printf("symbol %s: idx %d, size %d, func %d, isparam %d\n", name, ps->symbols->count - 1, size, scope, isparam);
+    printf("symbol %d: %s, size %d, func %d, isparam %d\n", ps->symbols->count - 1, name, size, scope, isparam);
 }
 
 static P_Func* _get_func_byidx(P_State *ps, int fidx) {
@@ -89,12 +89,17 @@ static void _add_func(P_State *ps, const char *name, int param, int ishost) {
     strcpy(f->name, name);
     f->param = param;
     f->ishost = ishost;
+    f->icodes = list_new();
     list_pushback(ps->funcs, f);
-    printf("func %s: idx %d, param %d, ishost %d\n", name, ps->funcs->count - 1, param, ishost);
+
+    printf("func %d: %s, param %d, ishost %d\n", ps->funcs->count - 1, name, param, ishost);
 }
 
 P_State* P_newstate(L_State *ls) {
     P_State *ps = (P_State*)malloc(sizeof(*ps));
+    ps->version.major = P_VERSION_MAJOR;
+    ps->version.minor = P_VERSION_MINOR;
+
     ps->ls = ls;
     ps->curfunc = -1;
 
@@ -183,7 +188,7 @@ static void _parse_func(P_State *ps) {
     if (ps->curfunc >= 0) {
         P_FATAL("nested func declare is not allowed");
     }
-    ++ps->curfunc;
+    ps->curfunc = ps->funcs->count;
     if (L_nexttoken(ps->ls) != L_TT_IDENT) {
         P_FATAL("ident expected by `func'");
     }

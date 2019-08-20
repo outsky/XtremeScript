@@ -4,6 +4,9 @@
 #include "list.h"
 #include "lexer.h"
 
+#define P_VERSION_MAJOR 0
+#define P_VERSION_MINOR 1
+
 #define MAX_SYMBOL_LEN 32
 
 typedef struct {
@@ -21,6 +24,10 @@ typedef struct {
 } P_Func;
 
 typedef struct {
+    struct {
+        int major;
+        int minor;
+    } version;
     L_State *ls;
     int curfunc;
 

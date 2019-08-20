@@ -2,7 +2,7 @@ CFLAGS = -g -Wall -std=c99 -D_GNU_SOURCE
 
 LIBS = -lm
 
-ALL_O = main.o lib.o list.o xasm.o xvm.o lexer.o parser.o
+ALL_O = main.o lib.o list.o xasm.o xvm.o lexer.o parser.o emitter.o
 
 xs: $(ALL_O)
 	cc -o $@ $(CFLAGS) $(ALL_O) $(LIBS)
@@ -14,6 +14,7 @@ xasm.o: xasm.h xasm.c
 xvm.o: xvm.h xvm.c
 lexer.o: lexer.h lexer.c
 parser.o: parser.h parser.c
+emitter.o: emitter.h emitter.c
 
 clean:
 	rm -f *.o xs.out
