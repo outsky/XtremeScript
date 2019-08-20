@@ -124,6 +124,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_SEM: {} break;
         case L_TT_OPEN_BRACE: {_parse_block(ps);} break;
         case L_TT_FUNC: {_parse_func(ps);} break;
+        case L_TT_VAR: {_parse_var(ps);} break;
         default: {
             P_FATAL("unexpected token");
         } break;
@@ -160,8 +161,12 @@ static void _parse_var(P_State *ps) {
             free(id);
             P_FATAL("`]' expected by array declare");
         }
+    } else {
+        L_cachenexttoken(ps->ls);
     }
-    L_cachenexttoken(ps->ls);
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        P_FATAL("`;' expected by var declare");
+    }
 
     _add_symbol(ps, id, size, ps->curfunc, 0);
     free(id);
