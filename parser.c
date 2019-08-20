@@ -140,6 +140,9 @@ static void _parse_var(P_State *ps) {
 }
 
 static void _parse_func(P_State *ps) {
+    if (ps->curfunc >= 0) {
+        P_FATAL("nested func declare is not allowed");
+    }
     ++ps->curfunc;
     if (L_nexttoken(ps->ls) != L_TT_IDENT) {
         P_FATAL("ident expected by `func'");
@@ -195,7 +198,12 @@ void P_parse(P_State *ps) {
             case L_TT_INVALID: {
                 P_FATAL("invalid token type");
             } break;
-            case L_TT_EOT: {return;} break;
+            case L_TT_EOT: {
+                if (ps->curfunc >= 0) {
+                    P_FATAL("unfinished func declare");
+                }
+                return;
+            } break;
 
             case L_TT_VAR: {
                 _parse_var(ps);
