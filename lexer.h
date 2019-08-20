@@ -102,6 +102,7 @@ void L_printtoken(const L_Token *t);
 
 L_State* L_newstate(const char *source);
 void L_freestate(L_State *Ls);
+void L_resetstate(L_State *Ls);
 
 L_TokenType L_nexttoken(L_State *Ls);
 void L_cachenexttoken(L_State *Ls);

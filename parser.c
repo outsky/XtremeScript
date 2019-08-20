@@ -112,8 +112,36 @@ void P_freestate(P_State *ps) {
 }
 
 // parse statements
+static void _parse_statement(P_State *ps);
+static void _parse_block(P_State *ps);
+
 static void _parse_var(P_State *ps);
 static void _parse_func(P_State *ps);
+
+static void _parse_statement(P_State *ps) {
+    L_TokenType tt = L_nexttoken(ps->ls);
+    if (tt == L_TT_SEM) {
+        return;
+    }
+    L_cachenexttoken(ps->ls);
+    if (tt == L_TT_CLOSE_BRACE) {
+        return;
+    }
+    _parse_block(ps);
+}
+
+static void _parse_block(P_State *ps) {
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
+        P_FATAL("`{' expected by block");
+    }
+    for (;;) {
+        _parse_statement(ps);
+        if (L_nexttoken(ps->ls) == L_TT_CLOSE_BRACE) {
+            break;
+        }
+        L_cachenexttoken(ps->ls);
+    }
+}
 
 static void _parse_var(P_State *ps) {
     if (L_nexttoken(ps->ls) != L_TT_IDENT) {
@@ -192,42 +220,13 @@ void P_add_func_icode(P_State *ps, int fidx, void *icode) {
 }
 
 void P_parse(P_State *ps) {
+    L_resetstate(ps->ls);
     for (;;) {
-        L_TokenType tt = L_nexttoken(ps->ls);
-        switch (tt) {
-            case L_TT_INVALID: {
-                P_FATAL("invalid token type");
-            } break;
-            case L_TT_EOT: {
-                if (ps->curfunc >= 0) {
-                    P_FATAL("unfinished func declare");
-                }
-                return;
-            } break;
-
-            case L_TT_VAR: {
-                _parse_var(ps);
-            } break;
-
-            case L_TT_FUNC: {
-                _parse_func(ps);
-            } break;
-
-            case L_TT_CLOSE_BRACE: {
-                if (ps->curfunc < 0) {
-                    P_FATAL("unexpect `}'");
-                }
-                ps->curfunc = -1;
-            } break;
-
-            case L_TT_STRING: {
-                _add_str(ps, ps->ls->curtoken.u.s);
-            }
-
-            default: {
-                printf("PARSER: unhandled tokentype: %d\n", tt);
-            } break;
+        _parse_statement(ps);
+        if (L_nexttoken(ps->ls) == L_TT_EOT) {
+            break;
         }
+        L_cachenexttoken(ps->ls);
     }
 }
 

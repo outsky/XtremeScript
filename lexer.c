@@ -148,6 +148,13 @@ void L_freestate(L_State *Ls) {
     free(Ls);
 }
 
+void L_resetstate(L_State *Ls) {
+    Ls->curidx = 0;
+    Ls->curline = 0;
+    Ls->cached = 0;
+    Ls->curtoken.type = L_TT_INVALID;
+}
+
 L_TokenType L_nexttoken(L_State *Ls) {
     if (Ls->cached) {
         Ls->cached = 0;
