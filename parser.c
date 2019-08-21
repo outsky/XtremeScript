@@ -350,6 +350,10 @@ static void _parse_op_le(P_State *ps) {
     P_add_func_icode(ps, EXIT_LABEL);
 }
 
+static void _parse_op_ass(P_State *ps) {
+    mov l, r
+}
+
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
@@ -361,6 +365,10 @@ static void _parse_exp(P_State *ps) {
 
         case L_TT_OP_LE: {
             _parse_op_le(ps);
+        } break;
+
+        case L_TT_OP_ASS: {
+            _parse_op_ass(ps);
         } break;
 
         default: {
@@ -493,6 +501,7 @@ static void _parse_factor(P_State *ps) {
 
                         I_addoperand(PUSH, I_OT_ARRAY_REL, sb->idx, 0);
                     } else {
+                        L_cachenexttoken(ps->ls);
                         if (sb->size != 1) {
                             P_FATAL("array must be accessed by index");
                         }
@@ -607,6 +616,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_FLOAT:
         case L_TT_OP_ADD:
         case L_TT_OP_SUB:
+        case L_TT_IDENT:
         case L_TT_OPEN_PAR: {
             L_cachenexttoken(ps->ls);
             _parse_exp(ps);
