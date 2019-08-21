@@ -137,6 +137,7 @@ void A_resetstate(A_State *As) {
 
 enum A_LexState {
     A_LS_INIT,
+    A_LS_UNARY,    // + | -
     A_LS_INT,       // 123
     A_LS_INTDOT,    // 123.
     A_LS_FLOAT,     // 123.123
@@ -191,6 +192,12 @@ A_TokenType A_nexttoken(A_State *As) {
                     break;
                 }
 
+                if (c == '+' || c == '-') {
+                    begin = As->curidx - 1;
+                    ls = A_LS_UNARY;
+                    break;
+                }
+
                 if (c == ':') {As->curtoken.t = A_TT_COLON; return A_TT_COLON;}
                 if (c == '[') {As->curtoken.t = A_TT_OPEN_BRACKET; return A_TT_OPEN_BRACKET;}
                 if (c == ']') {As->curtoken.t = A_TT_CLOSE_BRACKET; return A_TT_CLOSE_BRACKET;}
@@ -202,6 +209,14 @@ A_TokenType A_nexttoken(A_State *As) {
                 printf("%c(%d)\n", c, c);
                 A_FATAL("invalid char");
             }
+
+            case A_LS_UNARY: {
+                if (!isdigit(c)) {
+                    A_FATAL("number expected by unary op");
+                }
+                ls = A_LS_INT;
+            } break;
+
             case A_LS_INT: {
                 if (isdigit(c)) {
                     break;
