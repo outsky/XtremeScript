@@ -32,6 +32,7 @@ typedef struct {
     } version;
     L_State *ls;
     int curfunc;
+    int jumpcount;
 
     list *symbols;
     list *funcs;

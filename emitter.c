@@ -54,7 +54,7 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
     };
     char buff[256];
     if (code->isjump) {
-        sprintf(buff, "\tJmp %d\n", code->u.jump);
+        sprintf(buff, "Label%d:\n", code->u.jump);
         E_OUTPUT(buff, stream);
         return;
     }
@@ -120,6 +120,10 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
 
             case I_OT_REG: {
                 sprintf(buff, " _RetVal");
+            } break;
+
+            case I_OT_JUMP: {
+                sprintf(buff, " Label%d", opd->u.n);
             } break;
 
             default: {
