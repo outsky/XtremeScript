@@ -329,6 +329,29 @@ static void _parse_factor(P_State *ps) {
         case L_TT_FLOAT: {
             I_addoperand(PUSH, I_OT_FLOAT, ps->ls->curtoken.u.f, 0);
         } break;
+        case L_TT_OP_ADD: {
+            _parse_factor(ps);
+            return;
+        } 
+        case L_TT_OP_SUB: {
+            _parse_factor(ps);
+            
+            I_Code *POP_T0 = I_newinstr(I_OP_POP);
+            I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+
+            I_Code *MUL = I_newinstr(I_OP_MUL);
+            I_addoperand(MUL, I_OT_VAR, 0, 0);
+            I_addoperand(MUL, I_OT_INT, -1, 0);
+
+            I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
+            I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
+
+            P_add_func_icode(ps, POP_T0);
+            P_add_func_icode(ps, MUL);
+            P_add_func_icode(ps, PUSH_T0);
+            return;
+        }
+
         default: {
             L_printtoken(&ps->ls->curtoken);
             P_FATAL("unexpected token type by exp factor");
@@ -372,6 +395,8 @@ static void _parse_statement(P_State *ps) {
 
         case L_TT_INT:
         case L_TT_FLOAT:
+        case L_TT_OP_ADD:
+        case L_TT_OP_SUB:
         case L_TT_OPEN_PAR: {
             L_cachenexttoken(ps->ls);
             _parse_exp(ps);
