@@ -306,7 +306,9 @@ static void _parse_exp(P_State *ps) {
             P_add_func_icode(ps, EXIT);
         } break;
 
-        default: {} break;
+        default: {
+            L_cachenexttoken(ps->ls);
+        } break;
     }
 }
 
