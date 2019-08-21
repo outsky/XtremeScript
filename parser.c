@@ -237,9 +237,6 @@ static void _parse_host(P_State *ps) {
 
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
-    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
-        P_FATAL("`)' expected by exp");
-    }
 }
 
 static void _parse_subexp(P_State *ps) {
@@ -316,14 +313,29 @@ static void _parse_term(P_State *ps) {
 
 static void _parse_factor(P_State *ps) {
     L_TokenType tt = L_nexttoken(ps->ls);
-    if (tt != L_TT_INT) {
-        P_FATAL("int expected by exp factor");
+    if (tt == L_TT_OPEN_PAR) {
+        _parse_exp(ps);
+        if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+            P_FATAL("`)' expected by exp");
+        }
+        return;
     }
-    
-    I_Code *PUSH_INT = I_newinstr(I_OP_PUSH);
-    I_addoperand(PUSH_INT, I_OT_INT, ps->ls->curtoken.u.n, 0);
 
-    P_add_func_icode(ps, PUSH_INT);
+    I_Code *PUSH = I_newinstr(I_OP_PUSH);
+    switch (tt) {
+        case L_TT_INT: {
+            I_addoperand(PUSH, I_OT_INT, ps->ls->curtoken.u.n, 0);
+        } break;
+        case L_TT_FLOAT: {
+            I_addoperand(PUSH, I_OT_FLOAT, ps->ls->curtoken.u.f, 0);
+        } break;
+        default: {
+            L_printtoken(&ps->ls->curtoken);
+            P_FATAL("unexpected token type by exp factor");
+            return;
+        }
+    }
+    P_add_func_icode(ps, PUSH);
 }
 
 
@@ -357,7 +369,13 @@ static void _parse_statement(P_State *ps) {
         case L_TT_FUNC: {_parse_func(ps);} break;
         case L_TT_VAR: {_parse_var(ps);} break;
         case L_TT_HOST: {_parse_host(ps);} break;
-        case L_TT_OPEN_PAR: {_parse_exp(ps);} break;
+
+        case L_TT_INT:
+        case L_TT_FLOAT:
+        case L_TT_OPEN_PAR: {
+            L_cachenexttoken(ps->ls);
+            _parse_exp(ps);
+        } break;
 
         case L_TT_EOT: {
             P_FATAL("unexpected end of file");

@@ -70,6 +70,10 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
                 sprintf(buff, " %d", opd->u.n);
             } break;
 
+            case I_OT_FLOAT: {
+                sprintf(buff, " %f", opd->u.f);
+            } break;
+
             case I_OT_VAR: {
                 lnode *sb = ps->symbols->head;
                 for (int i = 0; i < opd->u.n; ++i) {
