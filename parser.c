@@ -53,12 +53,13 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
     }
 
     s = (P_Symbol*)malloc(sizeof(*s));
+    s->idx = ps->symbols->count;
     strcpy(s->name, name);
     s->size = size;
     s->scope = scope;
     s->isparam = isparam;
     list_pushback(ps->symbols, s);
-    printf("symbol %d: %s, size %d, func %d, isparam %d\n", ps->symbols->count - 1, name, size, scope, isparam);
+    printf("symbol %d: %s, size %d, func %d, isparam %d\n", s->idx, name, size, scope, isparam);
 }
 
 static P_Func* _get_func_byidx(P_State *ps, int fidx) {
@@ -345,11 +346,42 @@ static void _parse_factor(P_State *ps) {
             } else if (tt == L_TT_FALSE) {
                 I_addoperand(PUSH, I_OT_INT, 0, 0);
             } else if (tt == L_TT_IDENT) {
-                const P_Func *fn = _get_func(ps, ps->ls->curtoken.u.s);
+                const char *id = ps->ls->curtoken.u.s;
+                P_Symbol *sb = _get_symbol(ps, id);
+                if (sb != NULL) {
+                    if (sb->scope >= 0 && sb->scope != ps->curfunc) {
+                        P_FATAL("var not in current scope");
+                    }
+                    
+                    if (L_nexttoken(ps->ls) == L_TT_OPEN_BRACKET) {
+                        if (sb->size == 1) {
+                            P_FATAL("unexpected `[' applied to var");
+                        }
+                        _parse_exp(ps);
+                        if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
+                            P_FATAL("missing `]'");
+                        }
+                        I_Code *POP_T0 = I_newinstr(I_OP_POP);
+                        I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+                        P_add_func_icode(ps, POP_T0);
+
+                        I_addoperand(PUSH, I_OT_ARRAY_REL, sb->idx, 0);
+                    } else {
+                        if (sb->size != 1) {
+                            P_FATAL("array must be accessed by index");
+                        }
+
+                        I_addoperand(PUSH, I_OT_VAR, sb->idx, 0);
+                    }
+                }
+
+/*
+                const P_Func *fn = _get_func(ps, id);
                 if (fn == NULL) {
                     P_FATAL("unexpected ident by exp factor");
                 }
                 I_addoperand(PUSH, I_OT_FUNCIDX, fn->idx, 0);
+                */
             }
 
             P_add_func_icode(ps, PUSH);

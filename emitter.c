@@ -75,11 +75,38 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
             } break;
 
             case I_OT_VAR: {
-                lnode *sb = ps->symbols->head;
-                for (int i = 0; i < opd->u.n; ++i) {
-                    sb = sb->next;
+                P_Symbol *sb = NULL;
+                for (lnode *sbn = ps->symbols->head; sbn != NULL; sbn = sbn->next) {
+                    sb = (P_Symbol*)sbn->data;
+                    if (sb->idx == opd->u.n) {
+                        break;
+                    }
                 }
-                sprintf(buff, " %s", ((P_Symbol*)sb->data)->name);
+                if (sb == NULL) {
+                    E_FATAL("var symbol overflow");
+                }
+                sprintf(buff, " %s", sb->name);
+            } break;
+
+            case I_OT_ARRAY_REL: {
+                P_Symbol *sb = NULL;
+                P_Symbol *sbidx = NULL;
+                for (lnode *sbn = ps->symbols->head; sbn != NULL; sbn = sbn->next) {
+                    P_Symbol *tmp = (P_Symbol*)sbn->data;
+                    if (tmp->idx == opd->u.n) {
+                        sb = tmp;
+                    }
+                    if (tmp->idx == opd->idx) {
+                        sbidx = tmp;
+                    }
+                    if (sb != NULL && sbidx != NULL) {
+                        break;
+                    }
+                }
+                if (sb == NULL || sbidx == NULL) {
+                    E_FATAL("array symbol overflow");
+                }
+                sprintf(buff, " %s[%s]", sb->name, sbidx->name);
             } break;
 
             default: {

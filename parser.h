@@ -10,6 +10,7 @@
 #define MAX_SYMBOL_LEN 32
 
 typedef struct {
+    int idx;
     char name[MAX_SYMBOL_LEN];
     int size;
     int scope;
