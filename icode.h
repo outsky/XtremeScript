@@ -1,6 +1,8 @@
 #ifndef icode_h
 #define icode_h
 
+#include "list.h"
+
 typedef enum {
     I_OP_MOV, I_OP_ADD, I_OP_SUB, I_OP_MUL, I_OP_DIV, I_OP_MOD, I_OP_EXP, I_OP_NEG, I_OP_INC, 
     I_OP_DEC, I_OP_AND, I_OP_OR, I_OP_XOR, I_OP_NOT, I_OP_SHL, I_OP_SHR, I_OP_CONCAT, I_OP_GETCHAR, I_OP_SETCHAR, 
@@ -21,7 +23,7 @@ typedef enum {
 } I_OpType;
 
 typedef struct {
-    int opcode;
+    I_OpCode opcode;
     list *operands;
 } I_Instr;
 
@@ -43,6 +45,8 @@ typedef struct {
 } I_Code;
 
 I_Code* I_newjump(int jump);
-I_Code* I_newinstr(int opcode, list *operands);
+I_Code* I_newinstr(I_OpCode opcode);
+
+void I_addoperand(I_Code *code, I_OpType type, double f, int idx);
 
 #endif

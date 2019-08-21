@@ -40,6 +40,6 @@ P_State* P_newstate(L_State *ls);
 void P_freestate(P_State *ps);
 void P_parse(P_State *ps);
 
-void P_add_func_icode(P_State *ps, int fidx, void *icode);
+void P_add_func_icode(P_State *ps, void *icode);
 
 #endif

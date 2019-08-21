@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "lib.h"
 #include "parser.h"
-#include "string.h"
+#include "icode.h"
 
 #define P_FATAL(msg) fatal(__FUNCTION__, __LINE__, msg)
 
@@ -123,25 +124,10 @@ static void _parse_block(P_State *ps);
 static void _parse_func(P_State *ps);
 static void _parse_var(P_State *ps);
 static void _parse_host(P_State *ps);
-
-static void _parse_statement(P_State *ps) {
-    L_TokenType tt = L_nexttoken(ps->ls);
-    switch (tt) {
-        case L_TT_SEM: {} break;
-        case L_TT_OPEN_BRACE: {_parse_block(ps);} break;
-        case L_TT_FUNC: {_parse_func(ps);} break;
-        case L_TT_VAR: {_parse_var(ps);} break;
-        case L_TT_HOST: {_parse_host(ps);} break;
-
-        case L_TT_EOT: {
-            P_FATAL("unexpected end of file");
-        } break;
-        default: {
-            L_printtoken(&ps->ls->curtoken);
-            P_FATAL("unexpected token");
-        } break;
-    }
-}
+static void _parse_exp(P_State *ps);
+static void _parse_subexp(P_State *ps);
+static void _parse_term(P_State *ps);
+static void _parse_factor(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -249,8 +235,100 @@ static void _parse_host(P_State *ps) {
     free(id);
 }
 
-void P_add_func_icode(P_State *ps, int fidx, void *icode) {
-    P_Func *f = _get_func_byidx(ps, fidx);
+static void _parse_exp(P_State *ps) {
+    _parse_subexp(ps);
+    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+        P_FATAL("`)' expected by exp");
+    }
+}
+
+static void _parse_subexp(P_State *ps) {
+    _parse_term(ps);
+    for (;;) {
+        L_TokenType tt = L_nexttoken(ps->ls);
+        if (tt != L_TT_OP_ADD && tt != L_TT_OP_SUB) {
+            L_cachenexttoken(ps->ls);
+            break;
+        }
+
+        _parse_term(ps);
+
+        I_Code *POP_T1 = I_newinstr(I_OP_POP);
+        I_addoperand(POP_T1, I_OT_VAR, 1, 0);
+
+        I_Code *POP_T0 = I_newinstr(I_OP_POP);
+        I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+
+        I_Code *ADDSUB_T0_T1 = NULL;
+        if (tt == L_TT_OP_ADD) {
+            ADDSUB_T0_T1 = I_newinstr(I_OP_ADD);
+        } else {
+            ADDSUB_T0_T1 = I_newinstr(I_OP_SUB);
+        }
+        I_addoperand(ADDSUB_T0_T1, I_OT_VAR, 0, 0);
+        I_addoperand(ADDSUB_T0_T1, I_OT_VAR, 1, 0);
+
+        I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
+        I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
+
+        P_add_func_icode(ps, POP_T1);
+        P_add_func_icode(ps, POP_T0);
+        P_add_func_icode(ps, ADDSUB_T0_T1);
+        P_add_func_icode(ps, PUSH_T0);
+    }
+}
+
+static void _parse_term(P_State *ps) {
+    _parse_factor(ps);
+    for (;;) {
+        L_TokenType tt = L_nexttoken(ps->ls);
+        if (tt != L_TT_OP_MUL && tt != L_TT_OP_DIV) {
+            L_cachenexttoken(ps->ls);
+            break;
+        }
+
+        _parse_factor(ps);
+
+        I_Code *POP_T1 = I_newinstr(I_OP_POP);
+        I_addoperand(POP_T1, I_OT_VAR, 1, 0);
+
+        I_Code *POP_T0 = I_newinstr(I_OP_POP);
+        I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+
+        I_Code *MULDIV_T0_T1 = NULL;
+        if (tt == L_TT_OP_MUL) {
+            MULDIV_T0_T1 = I_newinstr(I_OP_MUL);
+        } else {
+            MULDIV_T0_T1 = I_newinstr(I_OP_DIV);
+        }
+        I_addoperand(MULDIV_T0_T1, I_OT_VAR, 0, 0);
+        I_addoperand(MULDIV_T0_T1, I_OT_VAR, 1, 0);
+
+        I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
+        I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
+
+        P_add_func_icode(ps, POP_T1);
+        P_add_func_icode(ps, POP_T0);
+        P_add_func_icode(ps, MULDIV_T0_T1);
+        P_add_func_icode(ps, PUSH_T0);
+    }
+}
+
+static void _parse_factor(P_State *ps) {
+    L_TokenType tt = L_nexttoken(ps->ls);
+    if (tt != L_TT_INT) {
+        P_FATAL("int expected by exp factor");
+    }
+    
+    I_Code *PUSH_INT = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_INT, I_OT_INT, ps->ls->curtoken.u.n, 0);
+
+    P_add_func_icode(ps, PUSH_INT);
+}
+
+
+void P_add_func_icode(P_State *ps, void *icode) {
+    P_Func *f = _get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
         P_FATAL("func is NULL");
     }
@@ -258,6 +336,9 @@ void P_add_func_icode(P_State *ps, int fidx, void *icode) {
 }
 
 void P_parse(P_State *ps) {
+    _add_symbol(ps, "_T0", 1, -1, 0);
+    _add_symbol(ps, "_T1", 1, -1, 0);
+
     L_resetstate(ps->ls);
     for (;;) {
         _parse_statement(ps);
@@ -268,3 +349,22 @@ void P_parse(P_State *ps) {
     }
 }
 
+static void _parse_statement(P_State *ps) {
+    L_TokenType tt = L_nexttoken(ps->ls);
+    switch (tt) {
+        case L_TT_SEM: {} break;
+        case L_TT_OPEN_BRACE: {_parse_block(ps);} break;
+        case L_TT_FUNC: {_parse_func(ps);} break;
+        case L_TT_VAR: {_parse_var(ps);} break;
+        case L_TT_HOST: {_parse_host(ps);} break;
+        case L_TT_OPEN_PAR: {_parse_exp(ps);} break;
+
+        case L_TT_EOT: {
+            P_FATAL("unexpected end of file");
+        } break;
+        default: {
+            L_printtoken(&ps->ls->curtoken);
+            P_FATAL("unexpected token");
+        } break;
+    }
+}
