@@ -339,15 +339,14 @@ static void _parse_factor(P_State *ps) {
             I_Code *POP_T0 = I_newinstr(I_OP_POP);
             I_addoperand(POP_T0, I_OT_VAR, 0, 0);
 
-            I_Code *MUL = I_newinstr(I_OP_MUL);
-            I_addoperand(MUL, I_OT_VAR, 0, 0);
-            I_addoperand(MUL, I_OT_INT, -1, 0);
+            I_Code *NEG = I_newinstr(I_OP_NEG);
+            I_addoperand(NEG, I_OT_VAR, 0, 0);
 
             I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
             I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
 
             P_add_func_icode(ps, POP_T0);
-            P_add_func_icode(ps, MUL);
+            P_add_func_icode(ps, NEG);
             P_add_func_icode(ps, PUSH_T0);
             return;
         }
