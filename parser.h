@@ -43,5 +43,6 @@ void P_freestate(P_State *ps);
 void P_parse(P_State *ps);
 
 void P_add_func_icode(P_State *ps, void *icode);
+P_Func* P_get_func_byidx(const P_State *ps, int fidx);
 
 #endif

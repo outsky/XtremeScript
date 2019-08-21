@@ -13,7 +13,6 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
 static int _get_str(P_State *ps, const char *s);
 static void _add_str(P_State *ps, const char *s);
 
-static P_Func* _get_func_byidx(P_State *ps, int fidx);
 static P_Func* _get_func(P_State *ps, const char *name);
 static void _add_func(P_State *ps, const char *name, int param, int ishost);
 
@@ -62,7 +61,7 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
     printf("symbol %d: %s, size %d, func %d, isparam %d\n", s->idx, name, size, scope, isparam);
 }
 
-static P_Func* _get_func_byidx(P_State *ps, int fidx) {
+P_Func* P_get_func_byidx(const P_State *ps, int fidx) {
     if (fidx >= ps->funcs->count) {
         return NULL;
     }
@@ -132,6 +131,7 @@ static void _parse_exp(P_State *ps);
 static void _parse_subexp(P_State *ps);
 static void _parse_term(P_State *ps);
 static void _parse_factor(P_State *ps);
+static void _parse_func_call(P_State *ps, const P_Func *fn);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -373,15 +373,15 @@ static void _parse_factor(P_State *ps) {
 
                         I_addoperand(PUSH, I_OT_VAR, sb->idx, 0);
                     }
-                }
+                } else {
+                    const P_Func *fn = _get_func(ps, id);
+                    if (fn == NULL) {
+                        P_FATAL("unexpected ident by exp factor");
+                    }
+                    _parse_func_call(ps, fn);
 
-/*
-                const P_Func *fn = _get_func(ps, id);
-                if (fn == NULL) {
-                    P_FATAL("unexpected ident by exp factor");
+                    I_addoperand(PUSH, I_OT_REG, 0, 0);
                 }
-                I_addoperand(PUSH, I_OT_FUNCIDX, fn->idx, 0);
-                */
             }
 
             P_add_func_icode(ps, PUSH);
@@ -417,9 +417,37 @@ static void _parse_factor(P_State *ps) {
     }
 }
 
+static void _parse_func_call(P_State *ps, const P_Func *fn) {
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
+        P_FATAL("`(' expected by function call");
+    }
+
+    int param = 0;
+    for (;;) {
+        if (L_nexttoken(ps->ls) == L_TT_CLOSE_PAR) {
+            break;
+        }
+
+        _parse_exp(ps);
+        if (++param < fn->param) {
+            if (L_nexttoken(ps->ls) != L_TT_COMMA) {
+                P_FATAL("`,' expected by function call param list");
+            }
+        }
+    }
+
+    if (param != fn->param) {
+        P_FATAL("function call param count not match");
+    }
+    
+    I_Code *CALL = I_newinstr(I_OP_CALL);
+    I_addoperand(CALL, I_OT_FUNCIDX, fn->idx, 0);
+
+    P_add_func_icode(ps, CALL);
+}
 
 void P_add_func_icode(P_State *ps, void *icode) {
-    P_Func *f = _get_func_byidx(ps, ps->curfunc);
+    P_Func *f = P_get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
         P_FATAL("func is NULL");
     }

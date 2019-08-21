@@ -3,6 +3,7 @@
 #include "lib.h"
 #include "emitter.h"
 #include "icode.h"
+#include "parser.h"
 
 #define E_FATAL(msg) fatal(__FUNCTION__, __LINE__, msg)
 #define E_OUTPUT(buff, stream) fwrite(buff, sizeof(char), strlen(buff), stream)
@@ -107,6 +108,18 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
                     E_FATAL("array symbol overflow");
                 }
                 sprintf(buff, " %s[%s]", sb->name, sbidx->name);
+            } break;
+
+            case I_OT_FUNCIDX: {
+                P_Func *fn = P_get_func_byidx(ps, opd->u.n);
+                if (fn == NULL) {
+                    E_FATAL("unknown function called");
+                }
+                sprintf(buff, " %s", fn->name);
+            } break;
+
+            case I_OT_REG: {
+                sprintf(buff, " _RetVal");
             } break;
 
             default: {

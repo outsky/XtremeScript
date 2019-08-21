@@ -16,7 +16,7 @@ typedef enum {
     I_OT_STRING,
     I_OT_VAR,
     I_OT_ARRAY_ABS,
-    I_OT_ARRAY_REL,
+    I_OT_ARRAY_REL, // 5
     I_OT_JUMP,
     I_OT_FUNCIDX,
     I_OT_REG,
