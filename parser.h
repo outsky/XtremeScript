@@ -17,6 +17,7 @@ typedef struct {
 } P_Symbol;
 
 typedef struct {
+    int idx;
     char name[MAX_SYMBOL_LEN];
     int param;
     int ishost;

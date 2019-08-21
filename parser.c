@@ -10,24 +10,26 @@
 static P_Symbol* _get_symbol(P_State *ps, const char *name);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
 
-static int _has_str(P_State *ps, const char *s);
+static int _get_str(P_State *ps, const char *s);
 static void _add_str(P_State *ps, const char *s);
 
 static P_Func* _get_func_byidx(P_State *ps, int fidx);
 static P_Func* _get_func(P_State *ps, const char *name);
 static void _add_func(P_State *ps, const char *name, int param, int ishost);
 
-static int _has_str(P_State *ps, const char *s) {
+static int _get_str(P_State *ps, const char *s) {
+    int idx = -1;
     for (lnode *n = ps->strs->head; n != NULL; n = n->next) {
+        ++idx;
         if (strcmp((char*)n->data, s) == 0) {
-            return 1;
+            break;
         }
     }
-    return 0;
+    return idx;
 }
 
 static void _add_str(P_State *ps, const char *s) {
-    if (_has_str(ps, s)) {
+    if (_get_str(ps, s) >= 0) {
         return;
     }
     list_pushback(ps->strs, strdup(s));
@@ -87,13 +89,14 @@ static void _add_func(P_State *ps, const char *name, int param, int ishost) {
     }
 
     P_Func *f = (P_Func*)malloc(sizeof(*f));
+    f->idx = ps->funcs->count;
     strcpy(f->name, name);
     f->param = param;
     f->ishost = ishost;
     f->icodes = list_new();
     list_pushback(ps->funcs, f);
 
-    printf("func %d: %s, param %d, ishost %d\n", ps->funcs->count - 1, name, param, ishost);
+    printf("func %d: %s, param %d, ishost %d\n", f->idx, name, param, ishost);
 }
 
 P_State* P_newstate(L_State *ls) {
@@ -321,20 +324,43 @@ static void _parse_factor(P_State *ps) {
         return;
     }
 
-    I_Code *PUSH = I_newinstr(I_OP_PUSH);
     switch (tt) {
-        case L_TT_INT: {
-            I_addoperand(PUSH, I_OT_INT, ps->ls->curtoken.u.n, 0);
+        case L_TT_INT:
+        case L_TT_FLOAT: 
+        case L_TT_STRING: 
+        case L_TT_TRUE:
+        case L_TT_FALSE: 
+        case L_TT_IDENT: {
+            I_Code *PUSH = I_newinstr(I_OP_PUSH);
+
+            if (tt == L_TT_INT) {
+                I_addoperand(PUSH, I_OT_INT, ps->ls->curtoken.u.n, 0);
+            } else if (tt == L_TT_FLOAT) {
+                I_addoperand(PUSH, I_OT_FLOAT, ps->ls->curtoken.u.f, 0);
+            } else if (tt == L_TT_STRING) {
+                int idx = _get_str(ps, ps->ls->curtoken.u.s);
+                I_addoperand(PUSH, I_OT_STRING, idx, 0);
+            } else if (tt == L_TT_TRUE) {
+                I_addoperand(PUSH, I_OT_INT, 1, 0);
+            } else if (tt == L_TT_FALSE) {
+                I_addoperand(PUSH, I_OT_INT, 0, 0);
+            } else if (tt == L_TT_IDENT) {
+                const P_Func *fn = _get_func(ps, ps->ls->curtoken.u.s);
+                if (fn == NULL) {
+                    P_FATAL("unexpected ident by exp factor");
+                }
+                I_addoperand(PUSH, I_OT_FUNCIDX, fn->idx, 0);
+            }
+
+            P_add_func_icode(ps, PUSH);
         } break;
-        case L_TT_FLOAT: {
-            I_addoperand(PUSH, I_OT_FLOAT, ps->ls->curtoken.u.f, 0);
-        } break;
-        case L_TT_OP_ADD: {
-            _parse_factor(ps);
-            return;
-        } 
+
+        case L_TT_OP_ADD:
         case L_TT_OP_SUB: {
             _parse_factor(ps);
+            if (tt == L_TT_OP_ADD) {
+                return;
+            }
             
             I_Code *POP_T0 = I_newinstr(I_OP_POP);
             I_addoperand(POP_T0, I_OT_VAR, 0, 0);
@@ -357,7 +383,6 @@ static void _parse_factor(P_State *ps) {
             return;
         }
     }
-    P_add_func_icode(ps, PUSH);
 }
 
 
