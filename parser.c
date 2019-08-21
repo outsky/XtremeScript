@@ -244,7 +244,7 @@ static void _parse_host(P_State *ps) {
     free(id);
 }
 
-static void _parse_logic_and(P_State *ps) {
+static void _parse_op_log_and(P_State *ps) {
     int jump_false_idx = _next_jumpidx(ps);
     int jump_exit_idx = _next_jumpidx(ps);
 
@@ -301,13 +301,66 @@ static void _parse_logic_and(P_State *ps) {
     P_add_func_icode(ps, EXIT);
 }
 
+static void _parse_op_le(P_State *ps) {
+    int jump_true_idx = _next_jumpidx(ps);
+    int jump_exit_idx = _next_jumpidx(ps);
+
+    // PUSH op2
+    _parse_exp(ps);
+
+    // POP _T1
+    I_Code *POP_T1 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T1, I_OT_VAR, 1, 0);
+
+    // POP _T0
+    I_Code *POP_T0 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+
+    // JLE _T0, _T1, TRUE
+    I_Code *JLE = I_newinstr(I_OP_JLE);
+    I_addoperand(JLE, I_OT_VAR, 0, 0);
+    I_addoperand(JLE, I_OT_VAR, 1, 0);
+    I_addoperand(JLE, I_OT_JUMP, jump_true_idx, 0);
+
+    // PUSH 0
+    I_Code *PUSH_0 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_0, I_OT_INT, 0, 0);
+
+    // JMP EXIT
+    I_Code *JMP_EXIT = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP_EXIT, I_OT_JUMP, jump_exit_idx, 0);
+
+    // TRUE label
+    I_Code *TRUE_LABEL = I_newjump(jump_true_idx);
+
+    // PUSH 1
+    I_Code *PUSH_1 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_1, I_OT_INT, 1, 0);
+
+    // EXIT label
+    I_Code *EXIT_LABEL = I_newjump(jump_exit_idx);
+
+    P_add_func_icode(ps, POP_T1);
+    P_add_func_icode(ps, POP_T0);
+    P_add_func_icode(ps, JLE);
+    P_add_func_icode(ps, PUSH_0);
+    P_add_func_icode(ps, JMP_EXIT);
+    P_add_func_icode(ps, TRUE_LABEL);
+    P_add_func_icode(ps, PUSH_1);
+    P_add_func_icode(ps, EXIT_LABEL);
+}
+
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
     L_TokenType tt = L_nexttoken(ps->ls);
     switch (tt) {
         case L_TT_OP_LOG_AND: {
-            _parse_logic_and(ps);
+            _parse_op_log_and(ps);
+        } break;
+
+        case L_TT_OP_LE: {
+            _parse_op_le(ps);
         } break;
 
         default: {
