@@ -8,14 +8,13 @@
 #include "emitter.h"
 
 void usage(const char *pname) {
-    printf("%s -op filename\n", pname);
+    printf("%s [-op] filename\n", pname);
     printf("op:\n"
             "\tc: compile .xasm to .xse\n"
             "\tr: run .xse\n"
             "\tl: lexer .xss\n"
             "\tp: parse .xss\n"
             "\te: comile .xss to .xasm\n"
-            "\td: direct run .xss\n"
     );
 }
 
@@ -164,6 +163,10 @@ void directrun(const char *filename) {
 
 int main(int argc, const char **argv) {
     const char* pname = argv[0];
+    if (argc == 2) {
+        directrun(argv[1]);
+        return 0;
+    }
     if (argc != 3) {
         usage(pname);
         exit(-1);
@@ -181,8 +184,6 @@ int main(int argc, const char **argv) {
         parse_xss(filename);
     } else if (strcmp(opt, "-e") == 0) {
         emit_xasm(filename);
-    } else if (strcmp(opt, "-d") == 0) {
-        directrun(filename);
     } else {
         usage(pname);
         exit(-1);
