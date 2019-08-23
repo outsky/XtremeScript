@@ -199,75 +199,75 @@ static void _run_add(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != src->type) {
-        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+        fatal(__FILE__, __LINE__, "math ops must have the same type");
     }
     if (dest->type == A_OT_INT) {
         dest->u.n += src->u.n;
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f += src->u.f;
     } else {
-        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+        fatal(__FILE__, __LINE__, "math ops must be int or float");
     }
 }
 static void _run_sub(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != src->type) {
-        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+        fatal(__FILE__, __LINE__, "math ops must have the same type");
     }
     if (dest->type == A_OT_INT) {
         dest->u.n -= src->u.n;
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f -= src->u.f;
     } else {
-        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+        fatal(__FILE__, __LINE__, "math ops must be int or float");
     }
 }
 static void _run_mul(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != src->type) {
-        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+        fatal(__FILE__, __LINE__, "math ops must have the same type");
     }
     if (dest->type == A_OT_INT) {
         dest->u.n *= src->u.n;
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f *= src->u.f;
     } else {
-        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+        fatal(__FILE__, __LINE__, "math ops must be int or float");
     }
 }
 static void _run_div(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != src->type) {
-        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+        fatal(__FILE__, __LINE__, "math ops must have the same type");
     }
     if (dest->type == A_OT_INT) {
         dest->u.n /= src->u.n;
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f /= src->u.f;
     } else {
-        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+        fatal(__FILE__, __LINE__, "math ops must be int or float");
     }
 }
 static void _run_mod(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != src->type) {
-        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+        fatal(__FILE__, __LINE__, "math ops must have the same type");
     }
     if (dest->type == A_OT_INT) {
         dest->u.n = dest->u.n % src->u.n;
     } else {
-        fatal(__FUNCTION__, __LINE__, "math mod ops must be int");
+        fatal(__FILE__, __LINE__, "math mod ops must be int");
     }
 }
 static void _run_exp(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != src->type) {
-        fatal(__FUNCTION__, __LINE__, "math ops must have the same type");
+        fatal(__FILE__, __LINE__, "math ops must have the same type");
     }
     if (dest->type == A_OT_INT) {
         dest->type = A_OT_FLOAT;
@@ -275,7 +275,7 @@ static void _run_exp(V_State *Vs, const V_Instr *ins) {
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f = pow(dest->u.n, src->u.n);
     } else {
-        fatal(__FUNCTION__, __LINE__, "math ops must be int or float");
+        fatal(__FILE__, __LINE__, "math ops must be int or float");
     }
 }
 static void _run_neg(V_State *Vs, const V_Instr *ins) {
@@ -285,7 +285,7 @@ static void _run_neg(V_State *Vs, const V_Instr *ins) {
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f = -dest->u.f;
     } else {
-        fatal(__FUNCTION__, __LINE__, "math neg only supports int and float");
+        fatal(__FILE__, __LINE__, "math neg only supports int and float");
     }
 }
 static void _run_inc(V_State *Vs, const V_Instr *ins) {
@@ -439,7 +439,7 @@ static void _run_callhost(V_State *Vs, const V_Instr *ins) {
     int idx = ins->ops[0].u.n;
     const char *api = _getapi(Vs, idx);
     if (api == NULL) {
-        fatal(__FUNCTION__, __LINE__, "host api not found");
+        fatal(__FILE__, __LINE__, "host api not found");
     }
 
     ExportApi fn = _getexportapi(Vs, api);
@@ -665,7 +665,7 @@ void V_run(V_State *Vs) {
             case A_OP_CALLHOST: { _run_callhost(Vs, ins); } break;
             case A_OP_PAUSE: { _run_pause(Vs, ins); } break;
             case A_OP_EXIT: { _run_exit(Vs, ins); } break;
-            default: { fatal(__FUNCTION__, __LINE__, "unknown op"); } break;
+            default: { fatal(__FILE__, __LINE__, "unknown op"); } break;
         }
         if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;
@@ -694,7 +694,7 @@ static void _print(V_State *vs) {
         } break;
 
         default: {
-            fatal(__FUNCTION__, __LINE__, "unsupported optype by _print");
+            fatal(__FILE__, __LINE__, "unsupported optype by _print");
         }
     }
 }

@@ -72,7 +72,7 @@ _Keyword _keywordcfg[] = {
     {NULL,          0},
 };
 
-#define L_FATAL(msg) printf("<line: %d>\n", Ls->curline); snapshot(Ls->source, Ls->curidx); fatal(__FUNCTION__, __LINE__, msg)
+#define L_FATAL(msg) printf("<line: %d>\n", Ls->curline); snapshot(Ls->source, Ls->curidx); fatal(__FILE__, __LINE__, msg)
 
 static char _peek(L_State *Ls, int forward);
 
@@ -318,7 +318,7 @@ L_TokenType L_nexttoken(L_State *Ls) {
                 }
                 if (c == '"') {
                     Ls->curtoken.type = L_TT_STRING;
-                    Ls->curtoken.u.s = strndup(Ls->source + begin, Ls->curidx - begin);
+                    Ls->curtoken.u.s = strndup(Ls->source + begin, Ls->curidx - begin - 1);
                     return Ls->curtoken.type;
                 }
             } break;

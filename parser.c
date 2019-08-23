@@ -5,13 +5,13 @@
 #include "parser.h"
 #include "icode.h"
 
-#define P_FATAL(msg) fatal(__FUNCTION__, __LINE__, msg)
+#define P_FATAL(msg) fatal(__FILE__, __LINE__, msg)
 
 static P_Symbol* _get_symbol(P_State *ps, const char *name);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
 
 static int _get_str(P_State *ps, const char *s);
-static void _add_str(P_State *ps, const char *s);
+static int _add_str(P_State *ps, const char *s);
 
 static P_Func* _get_func(P_State *ps, const char *name);
 static void _add_func(P_State *ps, const char *name, int param, int ishost);
@@ -31,12 +31,13 @@ static int _get_str(P_State *ps, const char *s) {
     return idx;
 }
 
-static void _add_str(P_State *ps, const char *s) {
-    if (_get_str(ps, s) >= 0) {
-        return;
+static int _add_str(P_State *ps, const char *s) {
+    int idx = _get_str(ps, s);
+    if (idx >= 0) {
+        return idx;
     }
     list_pushback(ps->strs, strdup(s));
-    printf("str %d: %s\n", ps->strs->count - 1, s);
+    return ps->strs->count - 1;
 }
 
 static P_Symbol* _get_symbol(P_State *ps, const char *name) {
@@ -387,12 +388,15 @@ static void _parse_subexp(P_State *ps) {
 
         _parse_term(ps);
 
+        // POP _T1
         I_Code *POP_T1 = I_newinstr(I_OP_POP);
         I_addoperand(POP_T1, I_OT_VAR, 1, 0);
 
+        // POP _T0
         I_Code *POP_T0 = I_newinstr(I_OP_POP);
         I_addoperand(POP_T0, I_OT_VAR, 0, 0);
 
+        // ADD|SUB _T0, _T1
         I_Code *ADDSUB_T0_T1 = NULL;
         if (tt == L_TT_OP_ADD) {
             ADDSUB_T0_T1 = I_newinstr(I_OP_ADD);
@@ -402,6 +406,7 @@ static void _parse_subexp(P_State *ps) {
         I_addoperand(ADDSUB_T0_T1, I_OT_VAR, 0, 0);
         I_addoperand(ADDSUB_T0_T1, I_OT_VAR, 1, 0);
 
+        // PUSH _T0
         I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
         I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
 
@@ -472,7 +477,7 @@ static void _parse_factor(P_State *ps) {
             } else if (tt == L_TT_FLOAT) {
                 I_addoperand(PUSH, I_OT_FLOAT, ps->ls->curtoken.u.f, 0);
             } else if (tt == L_TT_STRING) {
-                int idx = _get_str(ps, ps->ls->curtoken.u.s);
+                int idx = _add_str(ps, ps->ls->curtoken.u.s);
                 I_addoperand(PUSH, I_OT_STRING, idx, 0);
             } else if (tt == L_TT_TRUE) {
                 I_addoperand(PUSH, I_OT_INT, 1, 0);
@@ -561,6 +566,7 @@ static void _parse_func_call(P_State *ps, const P_Func *fn) {
         if (L_nexttoken(ps->ls) == L_TT_CLOSE_PAR) {
             break;
         }
+        L_cachenexttoken(ps->ls);
 
         _parse_exp(ps);
         if (++param < fn->param) {
@@ -570,11 +576,16 @@ static void _parse_func_call(P_State *ps, const P_Func *fn) {
         }
     }
 
-    if (param != fn->param) {
+    if (!fn->ishost && param != fn->param) {
         P_FATAL("function call param count not match");
     }
     
-    I_Code *CALL = I_newinstr(I_OP_CALL);
+    I_Code *CALL = NULL;
+    if (fn->ishost) {
+        CALL = I_newinstr(I_OP_CALLHOST);
+    } else {
+        CALL = I_newinstr(I_OP_CALL);
+    }
     I_addoperand(CALL, I_OT_FUNCIDX, fn->idx, 0);
 
     P_add_func_icode(ps, CALL);

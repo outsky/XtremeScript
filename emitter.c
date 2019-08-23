@@ -5,7 +5,7 @@
 #include "icode.h"
 #include "parser.h"
 
-#define E_FATAL(msg) fatal(__FUNCTION__, __LINE__, msg)
+#define E_FATAL(msg) fatal(__FILE__, __LINE__, msg)
 #define E_OUTPUT(buff, stream) fwrite(buff, sizeof(char), strlen(buff), stream)
 
 static void _header(P_State *ps, FILE *stream) {
@@ -73,6 +73,19 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
 
             case I_OT_FLOAT: {
                 sprintf(buff, " %f", opd->u.f);
+            } break;
+
+            case I_OT_STRING: {
+                int sidx = opd->u.n;
+                if (sidx >= ps->strs->count) {
+                    E_FATAL("string index overflow");
+                }
+
+                lnode *sn = ps->strs->head;
+                for (int i = 0; i < sidx; ++i) {
+                    sn = sn->next;
+                }
+                sprintf(buff, " \"%s\"", (const char*)sn->data);
             } break;
 
             case I_OT_VAR: {

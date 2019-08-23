@@ -4,8 +4,8 @@
 #include <ctype.h>
 #include "lib.h"
 
-void fatal(const char *func, int line, char *msg) {
-    printf("[x] %s:%d: %s\n", func, line, msg);
+void fatal(const char *where, int line, char *msg) {
+    printf("[x] %s:%d: %s\n", where, line, msg);
     exit(-1);
 }
 

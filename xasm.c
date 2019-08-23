@@ -6,7 +6,7 @@
 #include "xasm.h"
 #include "lib.h"
 
-#define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); fatal(__FUNCTION__, __LINE__, msg)
+#define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); fatal(__FILE__, __LINE__, msg)
 
 const char *A_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
     "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
@@ -44,7 +44,7 @@ static int _opcfg[][4] = {
     {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JL  op0, op1, label
     {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JGE op0, op1, label
     {3,      A_OTM_MEM | A_OTM_REG, A_OTM_MEM | A_OTM_INT, A_OTM_LABEL}, // JLE op0, op1, label
-    {1,      A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM, 0, 0}, // PUSH src
+    {1,      A_OTM_INT | A_OTM_FLOAT | A_OTM_STRING | A_OTM_MEM | A_OTM_REG, 0, 0}, // PUSH src
     {1,      A_OTM_MEM | A_OTM_REG, 0, 0}, // POP dest
     {1,      A_OTM_FUNC, 0, 0}, // CALL funcname
     {0,      0, 0, 0}, // RET
