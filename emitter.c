@@ -50,7 +50,7 @@ static void _func_icode(const P_State *ps, const I_Code *code, FILE *stream) {
         "MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
         "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 
         "JMP", "JE", "JNE", "JG", "JL", "JGE", "JLE", "PUSH", "POP", "CALL", "RET", 
-        "CALLHOST", "PAUSE", "EXIT", "ECHO"
+        "CALLHOST", "PAUSE", "EXIT"
     };
     char buff[256];
     if (code->isjump) {

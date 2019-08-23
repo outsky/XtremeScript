@@ -351,7 +351,6 @@ static void _parse_op_le(P_State *ps) {
 }
 
 static void _parse_op_ass(P_State *ps) {
-    mov l, r
 }
 
 static void _parse_exp(P_State *ps) {

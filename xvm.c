@@ -423,11 +423,6 @@ static void _run_exit(V_State *Vs, const V_Instr *ins) {
     V_Value *code = _getopvalue(Vs, 0);
     exit(code->u.n);
 }
-static void _run_echo(V_State *Vs, const V_Instr *ins) {
-     V_Value *v = _getopvalue(Vs, 0);
-     _pvalue(v); printf("\n");
-}
-
 
 /* none static functions */
 
@@ -641,7 +636,6 @@ void V_run(V_State *Vs) {
             case A_OP_CALLHOST: { _run_callhost(Vs, ins); } break;
             case A_OP_PAUSE: { _run_pause(Vs, ins); } break;
             case A_OP_EXIT: { _run_exit(Vs, ins); } break;
-            case A_OP_ECHO: { _run_echo(Vs, ins); } break;
             default: { fatal(__FUNCTION__, __LINE__, "unknown op"); } break;
         }
         if (ip == Vs->instr.ip) {
