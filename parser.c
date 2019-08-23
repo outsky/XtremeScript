@@ -720,22 +720,13 @@ static void _parse_statement(P_State *ps) {
         case L_TT_FUNC: {_parse_func(ps);} break;
         case L_TT_VAR: {_parse_var(ps);} break;
         case L_TT_HOST: {_parse_host(ps);} break;
-
-        case L_TT_INT:
-        case L_TT_FLOAT:
-        case L_TT_OP_ADD:
-        case L_TT_OP_SUB:
-        case L_TT_OPEN_PAR: {
-            L_cachenexttoken(ps->ls);
-            _parse_exp(ps);
-        } break;
-
         case L_TT_IDENT: {_parse_assign(ps);} break;
+        // function call
         case L_TT_RETURN: {_parse_return(ps);} break;
-
-        case L_TT_EOT: {
-            P_FATAL("unexpected end of file");
-        } break;
+        // while loop
+        // break
+        // continue
+        // if block
 
         default: {
             L_printtoken(&ps->ls->curtoken);
