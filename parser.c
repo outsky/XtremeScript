@@ -602,23 +602,71 @@ static void _parse_assign(P_State *ps) {
         return;
     }
 
-    if (L_nexttoken(ps->ls) != L_TT_OP_ASS) {
-        P_FATAL("`=' expected by assign");
+    int arrayidx = 0;
+    if (sb->size > 1) {
+        if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACKET) {
+            P_FATAL("`[' expected by array access");
+        }
+        _parse_exp(ps);
+        if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
+            P_FATAL("`]' expected by array access");
+        }
     }
+
+    I_OpCode opc;
+    L_TokenType tt = L_nexttoken(ps->ls);
+    switch (tt) {
+        case L_TT_OP_ASS: {opc = I_OP_MOV;} break;
+        case L_TT_OP_ADDASS: {opc = I_OP_ADD;} break;
+        case L_TT_OP_SUBASS: {opc = I_OP_SUB;} break;
+        case L_TT_OP_MULASS: {opc = I_OP_MUL;} break;
+        case L_TT_OP_DIVASS: {opc = I_OP_DIV;} break;
+        case L_TT_OP_MODASS: {opc = I_OP_MOD;} break;
+        case L_TT_OP_EXPASS: {opc = I_OP_EXP;} break;
+        case L_TT_OP_BIT_ANDASS: {opc = I_OP_AND;} break;
+        case L_TT_OP_BIT_ORASS: {opc = I_OP_OR;} break;
+        case L_TT_OP_BIT_XORASS: {opc = I_OP_XOR;} break;
+        case L_TT_OP_BIT_SLEFTASS: {opc = I_OP_SHL;} break;
+        case L_TT_OP_BIT_SRIGHTASS: {opc = I_OP_SHR;} break;
+
+        default: {
+            P_FATAL("assign operator expected");
+        }
+    }
+    I_Code *OP = I_newinstr(opc);
 
     _parse_exp(ps);
 
-    // POP _T0
-    I_Code *POP = I_newinstr(I_OP_POP);
-    I_addoperand(POP, I_OT_VAR, 0, 0);
+    if (sb->size == 1) {
+        /* var */
+        // POP _T0
+        I_Code *POP = I_newinstr(I_OP_POP);
+        I_addoperand(POP, I_OT_VAR, 0, 0);
 
-    // MOV V, _T0
-    I_Code *MOV = I_newinstr(I_OP_MOV);
-    I_addoperand(MOV, I_OT_VAR, sb->idx, 0);
-    I_addoperand(MOV, I_OT_VAR, 0, 0);
+        // <OP> v, _T0
+        I_addoperand(OP, I_OT_VAR, sb->idx, 0);
+        I_addoperand(OP, I_OT_VAR, 0, 0);
 
-    P_add_func_icode(ps, POP);
-    P_add_func_icode(ps, MOV);
+        P_add_func_icode(ps, POP);
+        P_add_func_icode(ps, OP);
+    } else {
+        /* array */
+        // POP _T1
+        I_Code *POP_T1 = I_newinstr(I_OP_POP);
+        I_addoperand(POP_T1, I_OT_VAR, 1, 0);
+
+        // POP _T0
+        I_Code *POP_T0 = I_newinstr(I_OP_POP);
+        I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+
+        // <OP> v[_T0], _T1
+        I_addoperand(OP, I_OT_ARRAY_REL, sb->idx, 0);
+        I_addoperand(OP, I_OT_VAR, 1, 0);
+
+        P_add_func_icode(ps, POP_T1);
+        P_add_func_icode(ps, POP_T0);
+        P_add_func_icode(ps, OP);
+    }
 }
 
 void P_add_func_icode(P_State *ps, void *icode) {
