@@ -5,7 +5,7 @@
 #include "xasm.h"
 #include "xvm.h"
 
-#define V_DEBUG 1
+//#define V_DEBUG 
 
 /* static function declarations */
 static void _freevalue(V_Value *v);
@@ -27,6 +27,8 @@ static void _setbyidx(V_State *Vs, int idx, const V_Value* v);
 static V_Value* _getopvalue(V_State *Vs, int idx);
 
 static V_Func* _getfunc(V_State *Vs, int idx);
+static const char* _getapi(V_State *vs, int idx);
+static ExportApi _getexportapi(V_State *Vs, const char *api);
 
 /* static function definations */
 static void _freevalue(V_Value *v) {
@@ -141,6 +143,21 @@ static V_Func* _getfunc(V_State *Vs, int idx) {
         return NULL;
     }
     return &Vs->func[idx];
+}
+static const char* _getapi(V_State *vs, int idx) {
+    if (idx < 0 || idx >= vs->api.count) {
+        return NULL;
+    }
+    return vs->api.api[idx];
+}
+static ExportApi _getexportapi(V_State *Vs, const char *api) {
+    for (lnode *n = Vs->exportapis->head; n != NULL; n = n->next) {
+        V_ExportApi *ea = (V_ExportApi*)n->data;
+        if (strcmp(ea->name, api) == 0) {
+            return ea->fn;
+        }
+    }
+    return NULL;
 }
 static void _copy(V_Value *dest, const V_Value *src) {
     _freevalue(dest);
@@ -417,7 +434,18 @@ static void _run_ret(V_State *Vs, const V_Instr *ins) {
     _popframe(Vs, fn->local + fn->param + 1);
     Vs->stack.frame = fnidx->idx;
 }
-static void _run_callhost(V_State *Vs, const V_Instr *ins) {}
+
+static void _run_callhost(V_State *Vs, const V_Instr *ins) {
+    int idx = ins->ops[0].u.n;
+    const char *api = _getapi(Vs, idx);
+    if (api == NULL) {
+        fatal(__FUNCTION__, __LINE__, "host api not found");
+    }
+
+    ExportApi fn = _getexportapi(Vs, api);
+    fn(Vs);
+}
+
 static void _run_pause(V_State *Vs, const V_Instr *ins) {}
 static void _run_exit(V_State *Vs, const V_Instr *ins) {
     V_Value *code = _getopvalue(Vs, 0);
@@ -429,6 +457,7 @@ static void _run_exit(V_State *Vs, const V_Instr *ins) {
 V_State* V_newstate() {
     V_State *vs = (V_State*)malloc(sizeof(*vs));
     memset(vs, 0, sizeof(*vs));
+    vs->exportapis = list_new();
     return vs;
 }
 
@@ -644,6 +673,48 @@ void V_run(V_State *Vs) {
 #ifdef V_DEBUG
         _pstatus(Vs);
 #endif
+    }
+}
+
+
+/* export apis */
+static void _print(V_State *vs) {
+    const V_Value *v = _pop(vs);
+    switch (v->type) {
+        case A_OT_INT: {
+            printf("%d\n", v->u.n);
+        } break;
+
+        case A_OT_FLOAT: {
+            printf("%lf\n", v->u.f);
+        } break;
+
+        case A_OT_STRING: {
+            printf("%s\n", v->u.s);
+        } break;
+
+        default: {
+            fatal(__FUNCTION__, __LINE__, "unsupported optype by _print");
+        }
+    }
+}
+
+void V_loadapis(V_State *vs) {
+    V_ExportApi apis[] = {
+        {"print", _print},
+        {NULL, NULL}
+    };
+    
+    for (int i = 0;; ++i) {
+        V_ExportApi *api = &apis[i];
+        if (api->name == NULL) {
+            break;
+        }
+
+        V_ExportApi *data = (V_ExportApi*)malloc(sizeof(*data));
+        data->name = strdup(api->name);
+        data->fn = api->fn;
+        list_pushback(vs->exportapis, data);
     }
 }
 

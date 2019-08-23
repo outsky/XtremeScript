@@ -50,6 +50,7 @@ void run_xse(const char *filename) {
     }
 
     V_State *Vs = V_newstate();
+    V_loadapis(Vs);
     int loaded = V_load(Vs, f);
     if (!loaded) {
         printf("[x] V_load failed\n");

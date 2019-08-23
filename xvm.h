@@ -56,10 +56,19 @@ typedef struct {
     V_InstrStream instr;
     V_Func *func;
     V_Api api;
+
+    list *exportapis;
 } V_State;
+
+typedef void (*ExportApi)(V_State *vs);
+typedef struct {
+    const char *name;
+    ExportApi fn;
+} V_ExportApi;
 
 V_State* V_newstate();
 void V_freestate(V_State *Vs);
+void V_loadapis(V_State *vs);
 int V_load(V_State *Vs, FILE *f);
 void V_run(V_State *Vs);
 

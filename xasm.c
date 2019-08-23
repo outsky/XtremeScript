@@ -699,7 +699,7 @@ static int _add_api(A_State *As, const char *s) {
     if (idx >= 0) {
         return idx;
     }
-    return list_pushback(As->api, (void*)s);
+    return list_pushback(As->api, strdup(s));
 }
 
 static int _get_apiidx(A_State *As, const char *s) {
