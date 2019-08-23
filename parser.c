@@ -601,7 +601,24 @@ static void _parse_assign(P_State *ps) {
         _parse_exp(ps);
         return;
     }
-    P_FATAL("not finished");
+
+    if (L_nexttoken(ps->ls) != L_TT_OP_ASS) {
+        P_FATAL("`=' expected by assign");
+    }
+
+    _parse_exp(ps);
+
+    // POP _T0
+    I_Code *POP = I_newinstr(I_OP_POP);
+    I_addoperand(POP, I_OT_VAR, 0, 0);
+
+    // MOV V, _T0
+    I_Code *MOV = I_newinstr(I_OP_MOV);
+    I_addoperand(MOV, I_OT_VAR, sb->idx, 0);
+    I_addoperand(MOV, I_OT_VAR, 0, 0);
+
+    P_add_func_icode(ps, POP);
+    P_add_func_icode(ps, MOV);
 }
 
 void P_add_func_icode(P_State *ps, void *icode) {
