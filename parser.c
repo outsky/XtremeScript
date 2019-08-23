@@ -5,6 +5,8 @@
 #include "parser.h"
 #include "icode.h"
 
+//#define P_DEBUG
+
 #define P_FATAL(msg) fatal(__FILE__, __LINE__, msg)
 
 static P_Symbol* _get_symbol(P_State *ps, const char *name);
@@ -63,7 +65,9 @@ static void _add_symbol(P_State *ps, const char *name, int size, int scope, int 
     s->scope = scope;
     s->isparam = isparam;
     list_pushback(ps->symbols, s);
+#ifdef P_DEBUG
     printf("symbol %d: %s, size %d, func %d, isparam %d\n", s->idx, name, size, scope, isparam);
+#endif
 }
 
 P_Func* P_get_func_byidx(const P_State *ps, int fidx) {
@@ -101,7 +105,9 @@ static void _add_func(P_State *ps, const char *name, int param, int ishost) {
     f->icodes = list_new();
     list_pushback(ps->funcs, f);
 
+#ifdef P_DEBUG
     printf("func %d: %s, param %d, ishost %d\n", f->idx, name, param, ishost);
+#endif
 }
 
 P_State* P_newstate(L_State *ls) {
@@ -138,6 +144,7 @@ static void _parse_subexp(P_State *ps);
 static void _parse_term(P_State *ps);
 static void _parse_factor(P_State *ps);
 static void _parse_func_call(P_State *ps, const P_Func *fn);
+static void _parse_assign(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -351,9 +358,6 @@ static void _parse_op_le(P_State *ps) {
     P_add_func_icode(ps, EXIT_LABEL);
 }
 
-static void _parse_op_ass(P_State *ps) {
-}
-
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
@@ -365,10 +369,6 @@ static void _parse_exp(P_State *ps) {
 
         case L_TT_OP_LE: {
             _parse_op_le(ps);
-        } break;
-
-        case L_TT_OP_ASS: {
-            _parse_op_ass(ps);
         } break;
 
         default: {
@@ -471,6 +471,7 @@ static void _parse_factor(P_State *ps) {
         case L_TT_FALSE: 
         case L_TT_IDENT: {
             I_Code *PUSH = I_newinstr(I_OP_PUSH);
+            int ignore_push = 0;
 
             if (tt == L_TT_INT) {
                 I_addoperand(PUSH, I_OT_INT, ps->ls->curtoken.u.n, 0);
@@ -518,12 +519,13 @@ static void _parse_factor(P_State *ps) {
                         P_FATAL("unexpected ident by exp factor");
                     }
                     _parse_func_call(ps, fn);
-
-                    I_addoperand(PUSH, I_OT_REG, 0, 0);
+                    ignore_push = 1;
                 }
             }
 
-            P_add_func_icode(ps, PUSH);
+            if (!ignore_push) {
+                P_add_func_icode(ps, PUSH);
+            }
         } break;
 
         case L_TT_OP_ADD:
@@ -591,6 +593,17 @@ static void _parse_func_call(P_State *ps, const P_Func *fn) {
     P_add_func_icode(ps, CALL);
 }
 
+static void _parse_assign(P_State *ps) {
+    const char *id = ps->ls->curtoken.u.s;
+    const P_Symbol *sb = _get_symbol(ps, id);
+    if (sb == NULL) {
+        L_cachenexttoken(ps->ls);
+        _parse_exp(ps);
+        return;
+    }
+    P_FATAL("not finished");
+}
+
 void P_add_func_icode(P_State *ps, void *icode) {
     P_Func *f = P_get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
@@ -626,10 +639,13 @@ static void _parse_statement(P_State *ps) {
         case L_TT_FLOAT:
         case L_TT_OP_ADD:
         case L_TT_OP_SUB:
-        case L_TT_IDENT:
         case L_TT_OPEN_PAR: {
             L_cachenexttoken(ps->ls);
             _parse_exp(ps);
+        } break;
+
+        case L_TT_IDENT: {
+            _parse_assign(ps);
         } break;
 
         case L_TT_EOT: {

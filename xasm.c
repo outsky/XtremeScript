@@ -6,6 +6,8 @@
 #include "xasm.h"
 #include "lib.h"
 
+//#define A_DEBUG
+
 #define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); fatal(__FILE__, __LINE__, msg)
 
 const char *A_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
@@ -654,6 +656,7 @@ void A_createbin(A_State *As) {
         }
     }
 
+#ifdef A_DEBUG
     printf("Output file: %s\n", fname);
     printf("Version %d.%d\n", A_VERSION_MAJOR, A_VERSION_MINOR);
     printf("Write size: %ld\n", fsize);
@@ -672,6 +675,7 @@ void A_createbin(A_State *As) {
         printf(" (Index %d)", As->mh.mainidx);
     }
     printf("\n");
+#endif
 }
 
 static int _add_str(A_State *As, const char *s) {

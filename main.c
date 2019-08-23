@@ -15,6 +15,7 @@ void usage(const char *pname) {
             "\tl: lexer .xss\n"
             "\tp: parse .xss\n"
             "\te: comile .xss to .xasm\n"
+            "\td: direct run .xss\n"
     );
 }
 
@@ -155,6 +156,12 @@ void emit_xasm(const char *filename) {
     P_freestate(ps);
 }
 
+void directrun(const char *filename) {
+    emit_xasm(filename);
+    compile_xasm("out.xasm");
+    run_xse("a.xse");
+}
+
 int main(int argc, const char **argv) {
     const char* pname = argv[0];
     if (argc != 3) {
@@ -174,6 +181,8 @@ int main(int argc, const char **argv) {
         parse_xss(filename);
     } else if (strcmp(opt, "-e") == 0) {
         emit_xasm(filename);
+    } else if (strcmp(opt, "-d") == 0) {
+        directrun(filename);
     } else {
         usage(pname);
         exit(-1);
