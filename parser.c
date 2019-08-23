@@ -476,7 +476,6 @@ static void _parse_factor(P_State *ps) {
         case L_TT_FALSE: 
         case L_TT_IDENT: {
             I_Code *PUSH = I_newinstr(I_OP_PUSH);
-            int ignore_push = 0;
 
             if (tt == L_TT_INT) {
                 I_addoperand(PUSH, I_OT_INT, ps->ls->curtoken.u.n, 0);
@@ -524,13 +523,11 @@ static void _parse_factor(P_State *ps) {
                         P_FATAL("unexpected ident by exp factor");
                     }
                     _parse_func_call(ps, fn);
-                    ignore_push = 1;
+                    I_addoperand(PUSH, I_OT_REG, 0, 0);
                 }
             }
 
-            if (!ignore_push) {
-                P_add_func_icode(ps, PUSH);
-            }
+            P_add_func_icode(ps, PUSH);
         } break;
 
         case L_TT_OP_ADD:
@@ -618,7 +615,7 @@ static void _parse_assign(P_State *ps) {
         }
     }
 
-    I_OpCode opc;
+    I_OpCode opc = -1;
     L_TokenType tt = L_nexttoken(ps->ls);
     switch (tt) {
         case L_TT_OP_ASS: {opc = I_OP_MOV;} break;
