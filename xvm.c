@@ -9,8 +9,6 @@
 
 /* static function declarations */
 static void _freevalue(V_Value *v);
-static void _pvalue(const V_Value *v);
-static void _pstatus(V_State *Vs);
 
 static void _reset(V_State *Vs);
 static void _copy(V_Value *dest, const V_Value *src);
@@ -36,6 +34,8 @@ static void _freevalue(V_Value *v) {
         free(v->u.s); v->u.s = NULL;
     }
 }
+
+#ifdef V_DEBUG
 static void _pvalue(const V_Value *v) {
     switch (v->type) {
         case A_OT_NULL: {
@@ -78,6 +78,7 @@ static void _pvalue(const V_Value *v) {
         } break;
     }
 }
+
 static void _pstatus(V_State *Vs) {
     printf("\tIP: %d\n", Vs->instr.ip);
     printf("\t_RetVal: < "); _pvalue(&Vs->ret); printf(" >\n");
@@ -98,6 +99,7 @@ static void _pstatus(V_State *Vs) {
         _pvalue(&Vs->stack.nodes[i]); printf(" }\n");
     }
 }
+#endif
 
 static void _reset(V_State *Vs) {
     Vs->ret.type = A_OT_NULL;

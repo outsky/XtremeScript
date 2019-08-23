@@ -642,7 +642,9 @@ void A_createbin(A_State *As) {
         fwrite(s, 1, num, f);
     }
 
+#ifdef A_DEBUG
     long fsize = ftell(f);
+#endif
     fclose(f);
 
     int varcount = 0;

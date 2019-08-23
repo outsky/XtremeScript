@@ -145,6 +145,7 @@ static void _parse_term(P_State *ps);
 static void _parse_factor(P_State *ps);
 static void _parse_func_call(P_State *ps, const P_Func *fn);
 static void _parse_assign(P_State *ps);
+static void _parse_return(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -428,12 +429,15 @@ static void _parse_term(P_State *ps) {
 
         _parse_factor(ps);
 
+        // POP _T1
         I_Code *POP_T1 = I_newinstr(I_OP_POP);
         I_addoperand(POP_T1, I_OT_VAR, 1, 0);
 
+        // POP _T0
         I_Code *POP_T0 = I_newinstr(I_OP_POP);
         I_addoperand(POP_T0, I_OT_VAR, 0, 0);
 
+        // MUL|DIV _T0, _T1
         I_Code *MULDIV_T0_T1 = NULL;
         if (tt == L_TT_OP_MUL) {
             MULDIV_T0_T1 = I_newinstr(I_OP_MUL);
@@ -443,6 +447,7 @@ static void _parse_term(P_State *ps) {
         I_addoperand(MULDIV_T0_T1, I_OT_VAR, 0, 0);
         I_addoperand(MULDIV_T0_T1, I_OT_VAR, 1, 0);
 
+        // PUSH _T0
         I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
         I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
 
@@ -571,6 +576,7 @@ static void _parse_func_call(P_State *ps, const P_Func *fn) {
         L_cachenexttoken(ps->ls);
 
         _parse_exp(ps);
+
         if (++param < fn->param) {
             if (L_nexttoken(ps->ls) != L_TT_COMMA) {
                 P_FATAL("`,' expected by function call param list");
@@ -582,6 +588,7 @@ static void _parse_func_call(P_State *ps, const P_Func *fn) {
         P_FATAL("function call param count not match");
     }
     
+    // CALL|CALLHOST func
     I_Code *CALL = NULL;
     if (fn->ishost) {
         CALL = I_newinstr(I_OP_CALLHOST);
@@ -589,7 +596,6 @@ static void _parse_func_call(P_State *ps, const P_Func *fn) {
         CALL = I_newinstr(I_OP_CALL);
     }
     I_addoperand(CALL, I_OT_FUNCIDX, fn->idx, 0);
-
     P_add_func_icode(ps, CALL);
 }
 
@@ -602,7 +608,6 @@ static void _parse_assign(P_State *ps) {
         return;
     }
 
-    int arrayidx = 0;
     if (sb->size > 1) {
         if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACKET) {
             P_FATAL("`[' expected by array access");
@@ -669,6 +674,25 @@ static void _parse_assign(P_State *ps) {
     }
 }
 
+static void _parse_return(P_State *ps) {
+    if (L_nexttoken(ps->ls) == L_TT_SEM) {
+        return;
+    }
+    L_cachenexttoken(ps->ls);
+
+    _parse_exp(ps);
+
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        P_FATAL("`;' expected by return");
+    }
+
+    // POP _RetVal
+    I_Code *POP = I_newinstr(I_OP_POP);
+    I_addoperand(POP, I_OT_REG, 0, 0);
+
+    P_add_func_icode(ps, POP);
+}
+
 void P_add_func_icode(P_State *ps, void *icode) {
     P_Func *f = P_get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
@@ -709,13 +733,13 @@ static void _parse_statement(P_State *ps) {
             _parse_exp(ps);
         } break;
 
-        case L_TT_IDENT: {
-            _parse_assign(ps);
-        } break;
+        case L_TT_IDENT: {_parse_assign(ps);} break;
+        case L_TT_RETURN: {_parse_return(ps);} break;
 
         case L_TT_EOT: {
             P_FATAL("unexpected end of file");
         } break;
+
         default: {
             L_printtoken(&ps->ls->curtoken);
             P_FATAL("unexpected token");
