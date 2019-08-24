@@ -39,8 +39,7 @@ test_invalid() {
         fi
     done
 
-    echo "\n\n===================INVALID SUMMARY===================="
-    printf "%d successes, %d failures\n" $success $fail
+    printf "\n<%d successes, %d failures>\n" $success $fail
 }
 
 test_valid() {
@@ -68,8 +67,7 @@ test_valid() {
         fi
     done
 
-    echo "\n\n===================VALID SUMMARY===================="
-    printf "%d successes, %d failures\n" $success $fail
+    printf "\n<%d successes, %d failures>\n" $success $fail
 }
 
 test_invalid
