@@ -1,0 +1,12 @@
+#! /bin/sh
+
+#set -e
+set -u
+for t in *.c; do
+echo $t
+if cc $t; then
+    ./a.out > $t.ok 2>&1
+else
+    echo "fail: $t"
+fi
+done
