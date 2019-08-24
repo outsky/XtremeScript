@@ -22,6 +22,24 @@ static int _next_jumpidx(P_State *ps) {
     return ++ps->jumpcount;
 }
 
+static int _get_break_label(P_State *ps) {
+    int label = ps->breaklabel;
+    ps->breaklabel = -1;
+    return label;
+}
+static void _set_break_label(P_State *ps, int label) {
+    ps->breaklabel = label;
+}
+
+static int _get_continue_label(P_State *ps) {
+    int label = ps->continuelabel;
+    ps->continuelabel = -1;
+    return label;
+}
+static void _set_continue_label(P_State *ps, int label) {
+    ps->continuelabel = label;
+}
+
 static int _get_str(P_State *ps, const char *s) {
     int idx = -1;
     for (lnode *n = ps->strs->head; n != NULL; n = n->next) {
@@ -119,6 +137,9 @@ P_State* P_newstate(L_State *ls) {
     ps->curfunc = -1;
     ps->jumpcount = 0;
 
+    ps->breaklabel = -1;
+    ps->continuelabel = -1;
+
     ps->symbols = list_new();
     ps->funcs = list_new();
     ps->strs = list_new();
@@ -147,6 +168,7 @@ static void _parse_func_call(P_State *ps);
 static void _parse_assign(P_State *ps);
 static void _parse_return(P_State *ps);
 static void _parse_while(P_State *ps);
+static void _parse_break(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -691,6 +713,8 @@ static void _parse_return(P_State *ps) {
 static void _parse_while(P_State *ps) {
     int label_loop_idx = _next_jumpidx(ps);
     int label_quit_idx = _next_jumpidx(ps);
+    _set_continue_label(ps, label_loop_idx);
+    _set_break_label(ps, label_quit_idx);
 
     // LOOP:
     I_Code *LOOP_LABEL = I_newjump(label_loop_idx);
@@ -718,12 +742,7 @@ static void _parse_while(P_State *ps) {
     P_add_func_icode(ps, JE);
 
     // do body
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
-        L_cachenexttoken(ps->ls);
-        _parse_statement(ps);
-    } else {
-        _parse_block(ps);
-    }
+    _parse_statement(ps);
 
     // JMP LOOP
     I_Code *JMP_LOOP = I_newinstr(I_OP_JMP);
@@ -733,6 +752,22 @@ static void _parse_while(P_State *ps) {
     // QUIT:
     I_Code *QUIT_LABEL = I_newjump(label_quit_idx);
     P_add_func_icode(ps, QUIT_LABEL);
+}
+
+static void _parse_break(P_State *ps) {
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        P_FATAL("`;' expected by break");
+    }
+
+    int break_label_idx = _get_break_label(ps);
+    if (break_label_idx < 0) {
+        P_FATAL("break is not allowed here");
+    }
+
+    // JMP BreakLabel
+    I_Code *JMP = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP, I_OT_JUMP, break_label_idx, 0);
+    P_add_func_icode(ps, JMP);
 }
 
 void P_add_func_icode(P_State *ps, void *icode) {
@@ -777,7 +812,7 @@ static void _parse_statement(P_State *ps) {
 
         case L_TT_RETURN: {_parse_return(ps);} break;
         case L_TT_WHILE: {_parse_while(ps);} break;
-        // break
+        case L_TT_BREAK: {_parse_break(ps);} break;
         // continue
         // if block
 

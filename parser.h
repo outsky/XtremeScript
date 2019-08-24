@@ -34,6 +34,9 @@ typedef struct {
     int curfunc;
     int jumpcount;
 
+    int breaklabel;
+    int continuelabel;
+
     list *symbols;
     list *funcs;
     list *strs;
