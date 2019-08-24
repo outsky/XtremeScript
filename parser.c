@@ -581,6 +581,10 @@ static void _parse_factor(P_State *ps) {
 }
 
 static void _parse_func_call(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("function call cant in global scope");
+    }
+
     const P_Func *fn = _get_func(ps, ps->ls->curtoken.u.s);
     if (fn == NULL) {
         P_FATAL("not a function");
@@ -696,6 +700,10 @@ static void _parse_assign(P_State *ps) {
 }
 
 static void _parse_return(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("return cant in global scope");
+    }
+
     if (L_nexttoken(ps->ls) == L_TT_SEM) {
         return;
     }
@@ -715,6 +723,10 @@ static void _parse_return(P_State *ps) {
 }
 
 static void _parse_while(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("while cant in global scope");
+    }
+
     int label_loop_idx = _next_jumpidx(ps);
     int label_quit_idx = _next_jumpidx(ps);
     _set_continue_label(ps, label_loop_idx);
@@ -759,6 +771,10 @@ static void _parse_while(P_State *ps) {
 }
 
 static void _parse_break(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("break cant in global scope");
+    }
+
     if (L_nexttoken(ps->ls) != L_TT_SEM) {
         P_FATAL("`;' expected by break");
     }
@@ -775,6 +791,10 @@ static void _parse_break(P_State *ps) {
 }
 
 static void _parse_continue(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("continue cant in global scope");
+    }
+
     if (L_nexttoken(ps->ls) != L_TT_SEM) {
         P_FATAL("`;' expected by continue");
     }
@@ -791,6 +811,10 @@ static void _parse_continue(P_State *ps) {
 }
 
 static void _parse_if(P_State *ps) {
+    if (ps->curfunc < 0) {
+        P_FATAL("if cant in global scope");
+    }
+
     if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
         P_FATAL("`(' expected by if");
     }
