@@ -1,10 +1,12 @@
+BIN = xs
+
 CFLAGS = -g -Wall -std=c99 -D_GNU_SOURCE
 
 LIBS = -lm
 
 ALL_O = main.o lib.o list.o xasm.o xvm.o lexer.o parser.o icode.o emitter.o
 
-xs: $(ALL_O)
+$(BIN): $(ALL_O)
 	cc -o $@ $(CFLAGS) $(ALL_O) $(LIBS)
 
 main.o: main.c
@@ -19,3 +21,6 @@ emitter.o: emitter.h emitter.c
 
 clean:
 	rm -f *.o xs.out
+
+test:
+	./tester $(BIN)

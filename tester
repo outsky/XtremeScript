@@ -1,0 +1,46 @@
+#! /bin/sh
+
+set -e
+set -u
+
+compiler="$1"
+
+scratchdir=$(mktemp -d)
+cleanup () {
+  rm -rf $scratchdir
+}
+trap cleanup EXIT
+
+testdir="./testsuit"
+runner="./$compiler"
+
+if ! test -f "$runner"; then
+    echo "$runner does not exist!" 1>&2
+    exit 1
+fi
+
+success=0
+fail=0
+for t in $testdir/*.xss; do
+    result=""
+
+    if ! timeout 5s $runner $t > $scratchdir/t.out 2>&1; then
+        result="[RunFail]"
+    else
+        if ! diff -u "$t.ok" "$scratchdir/t.out"; then
+            result="[NotMatch]"
+        fi
+    fi
+
+    if [ "$result" !=  "" ]; then
+        fail=$((fail+1))
+        echo "$result" "$t"
+        sed -e 's/^/\t\#/' $scratchdir/t.out
+    else
+        success=$((success+1))
+    fi
+done
+
+echo "\n\n===================TOTAL SUMMARY===================="
+printf "%d successes, %d failures\n" $success $fail
+
