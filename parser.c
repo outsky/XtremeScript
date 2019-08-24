@@ -143,7 +143,7 @@ static void _parse_exp(P_State *ps);
 static void _parse_subexp(P_State *ps);
 static void _parse_term(P_State *ps);
 static void _parse_factor(P_State *ps);
-static void _parse_func_call(P_State *ps, const P_Func *fn);
+static void _parse_func_call(P_State *ps);
 static void _parse_assign(P_State *ps);
 static void _parse_return(P_State *ps);
 
@@ -518,11 +518,7 @@ static void _parse_factor(P_State *ps) {
                         I_addoperand(PUSH, I_OT_VAR, sb->idx, 0);
                     }
                 } else {
-                    const P_Func *fn = _get_func(ps, id);
-                    if (fn == NULL) {
-                        P_FATAL("unexpected ident by exp factor");
-                    }
-                    _parse_func_call(ps, fn);
+                    _parse_func_call(ps);
                     I_addoperand(PUSH, I_OT_REG, 0, 0);
                 }
             }
@@ -560,7 +556,11 @@ static void _parse_factor(P_State *ps) {
     }
 }
 
-static void _parse_func_call(P_State *ps, const P_Func *fn) {
+static void _parse_func_call(P_State *ps) {
+    const P_Func *fn = _get_func(ps, ps->ls->curtoken.u.s);
+    if (fn == NULL) {
+        P_FATAL("not a function");
+    }
     if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
         P_FATAL("`(' expected by function call");
     }
@@ -600,11 +600,8 @@ static void _parse_assign(P_State *ps) {
     const char *id = ps->ls->curtoken.u.s;
     const P_Symbol *sb = _get_symbol(ps, id);
     if (sb == NULL) {
-        L_cachenexttoken(ps->ls);
-        _parse_exp(ps);
-        return;
+        P_FATAL("not a var");
     }
-
     if (sb->size > 1) {
         if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACKET) {
             P_FATAL("`[' expected by array access");
@@ -720,8 +717,14 @@ static void _parse_statement(P_State *ps) {
         case L_TT_FUNC: {_parse_func(ps);} break;
         case L_TT_VAR: {_parse_var(ps);} break;
         case L_TT_HOST: {_parse_host(ps);} break;
-        case L_TT_IDENT: {_parse_assign(ps);} break;
-        // function call
+        case L_TT_IDENT: {
+            const char *id = ps->ls->curtoken.u.s;
+            if (_get_symbol(ps, id) != NULL) {
+                _parse_assign(ps);
+                break;
+            }
+            _parse_func_call(ps);
+        } break;
         case L_TT_RETURN: {_parse_return(ps);} break;
         // while loop
         // break
