@@ -1,0 +1,12 @@
+host println();
+
+func main()
+{
+	var x;
+
+	x = 50;
+	while (x)
+		x = x - 1;
+    println(x);
+	return x;
+}

@@ -1,0 +1,7 @@
+func main()
+{
+	var x;
+	var y;
+	x = y = 0;
+	return x;
+}

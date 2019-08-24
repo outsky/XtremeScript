@@ -1,0 +1,11 @@
+host println();
+
+func main()
+{
+	var x;
+	
+	x = 4;
+    println(x);
+    println(x - 4);
+	return x - 4;
+}
