@@ -170,6 +170,7 @@ static void _parse_return(P_State *ps);
 static void _parse_while(P_State *ps);
 static void _parse_break(P_State *ps);
 static void _parse_continue(P_State *ps);
+static void _parse_if(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -659,6 +660,9 @@ static void _parse_assign(P_State *ps) {
     I_Code *OP = I_newinstr(opc);
 
     _parse_exp(ps);
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        P_FATAL("`;' expected by assign");
+    }
 
     if (sb->size == 1) {
         /* var */
@@ -787,6 +791,57 @@ static void _parse_continue(P_State *ps) {
     P_add_func_icode(ps, JMP);
 }
 
+static void _parse_if(P_State *ps) {
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
+        P_FATAL("`(' expected by if");
+    }
+
+    // do condition
+    _parse_exp(ps);
+
+    // POP _T0
+    I_Code *POP_T0 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_T0);
+
+    int label_else_idx = _next_jumpidx(ps);
+    int label_quit_idx = _next_jumpidx(ps);
+
+    // JE _T0, 0, ELSE
+    I_Code *JE = I_newinstr(I_OP_JE);
+    I_addoperand(JE, I_OT_VAR, 0, 0);
+    I_addoperand(JE, I_OT_INT, 0, 0);
+    I_addoperand(JE, I_OT_JUMP, label_else_idx, 0);
+    P_add_func_icode(ps, JE);
+
+    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+        P_FATAL("`)' expected by if");
+    }
+
+    // do true block
+    _parse_statement(ps);
+
+    // JMP QUIT
+    I_Code *JMP_QUIT = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP_QUIT, I_OT_JUMP, label_quit_idx, 0);
+    P_add_func_icode(ps, JMP_QUIT);
+
+    // ELSE:
+    I_Code *ELSE = I_newjump(label_else_idx);
+    P_add_func_icode(ps, ELSE);
+
+    if (L_nexttoken(ps->ls) == L_TT_ELSE) {
+        // do false block
+        _parse_statement(ps);
+    } else {
+        L_cachenexttoken(ps->ls);
+    }
+    
+    // QUIT:
+    I_Code *QUIT = I_newjump(label_quit_idx);
+    P_add_func_icode(ps, QUIT);
+}
+
 void P_add_func_icode(P_State *ps, void *icode) {
     P_Func *f = P_get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
@@ -825,13 +880,16 @@ static void _parse_statement(P_State *ps) {
                 break;
             }
             _parse_func_call(ps);
+            if (L_nexttoken(ps->ls) != L_TT_SEM) {
+                P_FATAL("`;' expected by function call");
+            }
         } break;
 
         case L_TT_RETURN: {_parse_return(ps);} break;
         case L_TT_WHILE: {_parse_while(ps);} break;
         case L_TT_BREAK: {_parse_break(ps);} break;
         case L_TT_CONTINUE: {_parse_continue(ps);} break;
-        // if block
+        case L_TT_IF: {_parse_if(ps);} break;
 
         default: {
             L_printtoken(&ps->ls->curtoken);
