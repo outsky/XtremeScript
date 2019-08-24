@@ -146,6 +146,7 @@ static void _parse_factor(P_State *ps);
 static void _parse_func_call(P_State *ps);
 static void _parse_assign(P_State *ps);
 static void _parse_return(P_State *ps);
+static void _parse_while(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -687,6 +688,53 @@ static void _parse_return(P_State *ps) {
     P_add_func_icode(ps, POP);
 }
 
+static void _parse_while(P_State *ps) {
+    int label_loop_idx = _next_jumpidx(ps);
+    int label_quit_idx = _next_jumpidx(ps);
+
+    // LOOP:
+    I_Code *LOOP_LABEL = I_newjump(label_loop_idx);
+    P_add_func_icode(ps, LOOP_LABEL);
+
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
+        P_FATAL("`(' expected by while");
+    }
+    // do condition
+    _parse_exp(ps);
+    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
+        P_FATAL("`)' expected by while");
+    }
+
+    // POP _T0
+    I_Code *POP_T0 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_T0);
+
+    // JE _T0, 0, QUIT
+    I_Code *JE = I_newinstr(I_OP_JE);
+    I_addoperand(JE, I_OT_VAR, 0, 0);
+    I_addoperand(JE, I_OT_INT, 0, 0);
+    I_addoperand(JE, I_OT_JUMP, label_quit_idx, 0);
+    P_add_func_icode(ps, JE);
+
+    // do body
+    if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
+        L_cachenexttoken(ps->ls);
+        _parse_statement(ps);
+    } else {
+        _parse_block(ps);
+    }
+
+    // JMP LOOP
+    I_Code *JMP_LOOP = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP_LOOP, I_OT_JUMP, label_loop_idx, 0);
+    P_add_func_icode(ps, JMP_LOOP);
+
+    // QUIT:
+    I_Code *QUIT_LABEL = I_newjump(label_quit_idx);
+    P_add_func_icode(ps, QUIT_LABEL);
+}
+
 void P_add_func_icode(P_State *ps, void *icode) {
     P_Func *f = P_get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
@@ -717,6 +765,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_FUNC: {_parse_func(ps);} break;
         case L_TT_VAR: {_parse_var(ps);} break;
         case L_TT_HOST: {_parse_host(ps);} break;
+
         case L_TT_IDENT: {
             const char *id = ps->ls->curtoken.u.s;
             if (_get_symbol(ps, id) != NULL) {
@@ -725,8 +774,9 @@ static void _parse_statement(P_State *ps) {
             }
             _parse_func_call(ps);
         } break;
+
         case L_TT_RETURN: {_parse_return(ps);} break;
-        // while loop
+        case L_TT_WHILE: {_parse_while(ps);} break;
         // break
         // continue
         // if block
