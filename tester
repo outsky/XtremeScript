@@ -66,6 +66,10 @@ test_valid() {
             fail=$((fail+1))
             echo "$result" "$t"
             sed -e 's/^//' $scratchdir/t.out
+
+            echo "--------------\n"
+            cat $t
+            return
         else
             success=$((success+1))
         fi
