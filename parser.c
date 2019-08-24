@@ -41,14 +41,14 @@ static void _set_continue_label(P_State *ps, int label) {
 }
 
 static int _get_str(P_State *ps, const char *s) {
-    int idx = -1;
+    int idx = 0;
     for (lnode *n = ps->strs->head; n != NULL; n = n->next) {
-        ++idx;
         if (strcmp((char*)n->data, s) == 0) {
-            break;
+            return idx;
         }
+        ++idx;
     }
-    return idx;
+    return -1;
 }
 
 static int _add_str(P_State *ps, const char *s) {
@@ -169,6 +169,7 @@ static void _parse_assign(P_State *ps);
 static void _parse_return(P_State *ps);
 static void _parse_while(P_State *ps);
 static void _parse_break(P_State *ps);
+static void _parse_continue(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
@@ -759,14 +760,30 @@ static void _parse_break(P_State *ps) {
         P_FATAL("`;' expected by break");
     }
 
-    int break_label_idx = _get_break_label(ps);
-    if (break_label_idx < 0) {
+    int label = _get_break_label(ps);
+    if (label < 0) {
         P_FATAL("break is not allowed here");
     }
 
-    // JMP BreakLabel
+    // JMP label
     I_Code *JMP = I_newinstr(I_OP_JMP);
-    I_addoperand(JMP, I_OT_JUMP, break_label_idx, 0);
+    I_addoperand(JMP, I_OT_JUMP, label, 0);
+    P_add_func_icode(ps, JMP);
+}
+
+static void _parse_continue(P_State *ps) {
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        P_FATAL("`;' expected by continue");
+    }
+
+    int label = _get_continue_label(ps);
+    if (label < 0) {
+        P_FATAL("continue is not allowed here");
+    }
+
+    // JMP label
+    I_Code *JMP = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP, I_OT_JUMP, label, 0);
     P_add_func_icode(ps, JMP);
 }
 
@@ -813,7 +830,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_RETURN: {_parse_return(ps);} break;
         case L_TT_WHILE: {_parse_while(ps);} break;
         case L_TT_BREAK: {_parse_break(ps);} break;
-        // continue
+        case L_TT_CONTINUE: {_parse_continue(ps);} break;
         // if block
 
         default: {
