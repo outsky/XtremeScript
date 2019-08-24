@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in `ls *.c`
+for i in `ls *.ok`
 do
     cp $i ${i%.*}.xss
 done
