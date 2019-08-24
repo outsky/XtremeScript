@@ -143,6 +143,7 @@ enum A_LexState {
     A_LS_INTDOT,    // 123.
     A_LS_FLOAT,     // 123.123
     A_LS_STR_HALF,  // "abc
+    A_LS_STR_ESC,   // "abc\?
     A_LS_IDENT,
     A_LS_COMMENT,   // ; comment
 };
@@ -263,7 +264,11 @@ A_TokenType A_nexttoken(A_State *As) {
 
                 A_FATAL("unexpect char");
             }
-            case A_LS_STR_HALF: {   // TODO: deal with escape \"
+            case A_LS_STR_HALF: {
+                if (c == '\\') {
+                    ls = A_LS_STR_ESC;
+                    break;
+                }
                 if (c == '"') {
                     As->curtoken.t = A_TT_STRING;
                     As->curtoken.u.s = strndup(As->program + begin, As->curidx - begin - 1);
@@ -271,6 +276,9 @@ A_TokenType A_nexttoken(A_State *As) {
                 }
                 break;
             }
+            case A_LS_STR_ESC: {
+                ls = A_LS_STR_HALF;
+            } break;
             case A_LS_IDENT: {
                 if (c != '_' && !isalnum(c)) {
                     --As->curidx;
