@@ -595,7 +595,7 @@ int V_load(V_State *Vs, FILE *f) {
     printf("Instructions Assembled: %d\n", Vs->instr.count);
     printf("Globals: %d\n", Vs->global);
     printf("Host API Calls: %d\n", Vs->api.count);
-    printf("_Main() Present: %s", Vs->mainidx >= 0 ? "YES" : "No");
+    printf("main() Present: %s", Vs->mainidx >= 0 ? "YES" : "No");
     if (Vs->mainidx >= 0) {
         printf(" (Index %d)", Vs->mainidx);
     }
@@ -608,7 +608,7 @@ int V_load(V_State *Vs, FILE *f) {
 void V_run(V_State *Vs) {
     _reset(Vs);
     if (Vs->mainidx < 0) {
-        printf("No _Main(), nothing to run\n");
+        printf("No main(), nothing to run\n");
         return;
     }
 

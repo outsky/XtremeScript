@@ -456,7 +456,7 @@ static void _pass1(A_State *As) {
                     A_FATAL("func expects `{'");
                 }
                 curfunc = _add_func(As, name, 0, 0, 0);
-                if (strcmp("_Main", name) == 0) {
+                if (strcmp("main", name) == 0) {
                     As->mh.mainidx = curfunc;
                 }
                 free(name);
@@ -680,7 +680,7 @@ void A_createbin(A_State *As) {
     printf("Labels: %d\n", As->labels->count);
     printf("Host API Calls: %d\n", As->api->count);
     printf("Functions: %d\n", As->func->count);
-    printf("_Main() Present: %s", As->mh.mainidx >= 0 ? "YES" : "No");
+    printf("main() Present: %s", As->mh.mainidx >= 0 ? "YES" : "No");
     if (As->mh.mainidx >= 0) {
         printf(" (Index %d)", As->mh.mainidx);
     }
