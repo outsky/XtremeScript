@@ -61,7 +61,7 @@ test_valid() {
         if [ "$result" !=  "" ]; then
             fail=$((fail+1))
             echo "$result" "$t"
-            sed -e 's/^/\t\#/' $scratchdir/t.out
+            sed -e 's/^//' $scratchdir/t.out
         else
             success=$((success+1))
         fi
