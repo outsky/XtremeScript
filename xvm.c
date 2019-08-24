@@ -684,6 +684,26 @@ static void _print(V_State *vs) {
     const V_Value *v = _pop(vs);
     switch (v->type) {
         case A_OT_INT: {
+            printf("%d", v->u.n);
+        } break;
+
+        case A_OT_FLOAT: {
+            printf("%lf", v->u.f);
+        } break;
+
+        case A_OT_STRING: {
+            printf("%s", v->u.s);
+        } break;
+
+        default: {
+            fatal(__FILE__, __LINE__, "unsupported optype by _print");
+        }
+    }
+}
+static void _println(V_State *vs) {
+    const V_Value *v = _pop(vs);
+    switch (v->type) {
+        case A_OT_INT: {
             printf("%d\n", v->u.n);
         } break;
 
@@ -696,7 +716,7 @@ static void _print(V_State *vs) {
         } break;
 
         default: {
-            fatal(__FILE__, __LINE__, "unsupported optype by _print");
+            fatal(__FILE__, __LINE__, "unsupported optype by _println");
         }
     }
 }
@@ -704,6 +724,7 @@ static void _print(V_State *vs) {
 void V_loadapis(V_State *vs) {
     V_ExportApi apis[] = {
         {"print", _print},
+        {"println", _println},
         {NULL, NULL}
     };
     
