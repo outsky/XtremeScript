@@ -9,7 +9,7 @@
 
 #define P_FATAL(msg) fatal(__FILE__, __LINE__, msg)
 
-static P_Symbol* _get_symbol(P_State *ps, const char *name);
+static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
 
 static int _get_str(P_State *ps, const char *s);
@@ -60,19 +60,24 @@ static int _add_str(P_State *ps, const char *s) {
     return ps->strs->count - 1;
 }
 
-static P_Symbol* _get_symbol(P_State *ps, const char *name) {
+static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope) {
+    P_Symbol *gs = NULL;
     for (lnode *n = ps->symbols->head; n != NULL; n = n->next) {
         P_Symbol *s = (P_Symbol*)n->data;
         if (strcmp(s->name, name) == 0) {
-            return s;
+            if (s->scope == -1) {
+                gs = s;
+            } else if (s->scope == scope) {
+                return s;
+            }
         }
     }
-    return NULL;
+    return gs;
 }
 
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam) {
-    P_Symbol *s = _get_symbol(ps, name);
-    if (s && s->scope == scope) {
+    P_Symbol *s = _get_symbol(ps, name, scope);
+    if (s != NULL && s->scope == scope) {
         P_FATAL("redefined symbol");
     }
 
@@ -514,12 +519,8 @@ static void _parse_factor(P_State *ps) {
                 I_addoperand(PUSH, I_OT_INT, 0, 0);
             } else if (tt == L_TT_IDENT) {
                 const char *id = ps->ls->curtoken.u.s;
-                P_Symbol *sb = _get_symbol(ps, id);
+                P_Symbol *sb = _get_symbol(ps, id, ps->curfunc);
                 if (sb != NULL) {
-                    if (sb->scope >= 0 && sb->scope != ps->curfunc) {
-                        P_FATAL("var not in current scope");
-                    }
-                    
                     if (L_nexttoken(ps->ls) == L_TT_OPEN_BRACKET) {
                         if (sb->size == 1) {
                             P_FATAL("unexpected `[' applied to var");
@@ -626,7 +627,7 @@ static void _parse_func_call(P_State *ps) {
 
 static void _parse_assign(P_State *ps) {
     const char *id = ps->ls->curtoken.u.s;
-    const P_Symbol *sb = _get_symbol(ps, id);
+    const P_Symbol *sb = _get_symbol(ps, id, ps->curfunc);
     if (sb == NULL) {
         P_FATAL("not a var");
     }
@@ -898,7 +899,7 @@ static void _parse_statement(P_State *ps) {
 
         case L_TT_IDENT: {
             const char *id = ps->ls->curtoken.u.s;
-            if (_get_symbol(ps, id) != NULL) {
+            if (_get_symbol(ps, id, ps->curfunc) != NULL) {
                 _parse_assign(ps);
                 break;
             }
