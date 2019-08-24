@@ -1,9 +1,9 @@
-#include <stdio.h>
+host println();
 
-int main() 
+func main() 
 {
-   int Count;
-   int Array[10];
+   var Count;
+   var Array[10];
 
    for (Count = 1; Count <= 10; Count++)
    {
@@ -12,7 +12,7 @@ int main()
 
    for (Count = 0; Count < 10; Count++)
    {
-      printf("%d\n", Array[Count]);
+      println(Array[Count]);
    }
 
    return 0;

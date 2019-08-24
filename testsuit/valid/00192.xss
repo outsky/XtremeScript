@@ -1,13 +1,13 @@
-#include <stdio.h>
+host println();
 
-int main()
+func main()
 {
-   int Count = 0;
+   var Count = 0;
 
    for (;;)
    {
       Count++;
-      printf("%d\n", Count);
+      println(Count);
       if (Count >= 10)
          break;
    }

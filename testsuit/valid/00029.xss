@@ -1,7 +1,7 @@
-int
+func
 main()
 {
-	int x;
+	var x;
 	
 	x = 1;
 	x = x ^ 3;

@@ -1,24 +1,25 @@
-#include <stdio.h>
+host print();
+host println();
 
-int main()
+func main()
 {
-   int a;
-   char b;
+   var a;
+   var b;
 
    a = 0;
    while (a < 2)
    {
-      printf("%d", a++);
+      print(a++);
       break;
 
-      b = 'A';
-      while (b < 'C')
+      b = "A";
+      while (b < "C")
       {
-         printf("%c", b++);
+         print(b++);
       }
-      printf("e");
+      print("e");
    }
-   printf("\n");
+   println("");
 
    return 0;
 }

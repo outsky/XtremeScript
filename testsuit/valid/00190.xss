@@ -1,11 +1,11 @@
-#include <stdio.h>
+host println();
 
-void fred(void)
+func fred(void)
 {
-   printf("yo\n");
+   println("yo");
 }
 
-int main()
+func main()
 {
    fred();
 

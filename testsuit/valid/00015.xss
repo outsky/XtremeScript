@@ -1,7 +1,7 @@
-int
+func
 main()
 {
-	int arr[2];
+	var arr[2];
 
 	arr[0] = 1;
 	arr[1] = 2;

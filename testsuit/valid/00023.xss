@@ -1,6 +1,6 @@
-int x;
+var x;
 
-int
+func
 main()
 {
 	x = 0;

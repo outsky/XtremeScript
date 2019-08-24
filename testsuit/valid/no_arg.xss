@@ -1,7 +1,7 @@
-int three(){
+func three(){
     return 3;
 }
 
-int main() {
+func main() {
     return three();
 }

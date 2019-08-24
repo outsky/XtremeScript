@@ -1,20 +1,20 @@
-int
+func
 zero()
 {
 	return 0;
 }
 
-int
+func
 one()
 {
 	return 1;
 }
 
-int
+func
 main()
 {
-	int x;
-	int y;
+	var x;
+	var y;
 	
 	x = zero();
 	y = ++x;

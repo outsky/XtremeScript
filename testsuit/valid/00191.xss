@@ -1,15 +1,15 @@
-#include <stdio.h>
+host println();
 
-int main()
+func main()
 {
-   int a;
+   var a;
 
    for (a = 0; a < 2; a++)
    {
-      int b = a;
+      var b = a;
    }
 
-   printf("it's all good\n");
+   println("it's all good");
 
    return 0;
 }

@@ -1,6 +1,6 @@
 #define X 6 / 2
 
-int
+func
 main()
 {
 	return X - 3;

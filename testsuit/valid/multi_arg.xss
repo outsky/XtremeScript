@@ -1,7 +1,7 @@
-int sub_3(int x, int y, int z) {
+func sub_3(x, y, z) {
     return x - y - z;
 }
 
-int main() {
+func main() {
     return sub_3(10, 4, 2);
 }

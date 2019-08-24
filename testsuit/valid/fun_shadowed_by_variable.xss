@@ -1,8 +1,8 @@
-int foo() {
+func foo() {
     return 3;
 }
 
-int main() {
-    int foo = 5;
+func main() {
+    var foo = 5;
     return foo;
 }

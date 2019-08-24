@@ -1,10 +1,10 @@
-int
-foo(void)
+func
+foo()
 {
 	return 0;
 }
 
-int
+func
 main()
 {
 	return foo();

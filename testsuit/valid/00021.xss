@@ -1,10 +1,10 @@
-int
-foo(int a, int b)
+func
+foo(a, b)
 {
 	return 2 + a - b;
 }
 
-int
+func
 main()
 {
 	return foo(1, 3);

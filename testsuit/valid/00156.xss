@@ -1,12 +1,12 @@
-#include <stdio.h>
+host println();
 
-int main() 
+func main() 
 {
-   int Count;
+   var Count;
 
    for (Count = 1; Count <= 10; Count++)
    {
-      printf("%d\n", Count);
+      println(Count);
    }
 
    return 0;

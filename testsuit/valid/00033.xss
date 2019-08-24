@@ -1,16 +1,16 @@
-int g;
+var g;
 
-int
+func
 effect()
 {
 	g = 1;
 	return 1;
 }
 
-int
+func
 main()
 {
-    int x;
+    var x;
     
     g = 0;
     x = 0;

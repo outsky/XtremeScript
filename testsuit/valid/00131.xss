@@ -1,12 +1,12 @@
-#include <stdio.h>
+host println();
 
 int main() 
 {
-   printf("Hello\n");
-   printf("Hello\n"); /* this is a comment */ printf("Hello\n");
-   printf("Hello\n");
+   println("Hello");
+   println("Hello"); /* this is a comment */ println("Hello");
+   println("Hello");
    // this is also a comment sayhello();
-   printf("Hello\n");
+   println("Hello");
 
    return 0;
 }

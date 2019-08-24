@@ -1,7 +1,7 @@
-int twice(int x){
+func twice(x){
     return 2 * x;
 }
 
-int main() {
+func main() {
     return twice(3);
 }

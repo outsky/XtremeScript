@@ -1,10 +1,10 @@
-void
+func
 voidfn()
 {
     return;
 }
 
-int
+func
 main()
 {
     voidfn();

@@ -1,9 +1,9 @@
-int
+func
 main() {
-	int n;
-	int t;
-	int c;
-	int p;
+	var n;
+	var t;
+	var c;
+	var p;
 
 	c = 0;
 	n = 2;

@@ -1,8 +1,8 @@
-#include <stdio.h>
+host println();
 
-int
-main(void)
+func
+main()
 {
-	printf("hello world\n");
+	println("hello world");
 	return 0;
 }

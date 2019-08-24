@@ -1,19 +1,19 @@
-#include <stdio.h>
+host println();
 
-int main()
+func main()
 {
-   int a = 1;
+   var a = 1;
 
    if (a)
-      printf("a is true\n");
+      println("a is true");
    else
-      printf("a is false\n");
+      println("a is false");
 
-   int b = 0;
+   var b = 0;
    if (b)
-      printf("b is true\n");
+      println("b is true");
    else
-      printf("b is false\n");
+      println("b is false");
 
    return 0;
 }

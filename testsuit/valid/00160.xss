@@ -1,10 +1,10 @@
-#include <stdio.h>
+host println();
 
-int main()
+func main()
 {
-   int a;
-   int p;
-   int t;
+   var a;
+   var p;
+   var t;
 
    a = 1;
    p = 0;
@@ -12,7 +12,7 @@ int main()
 
    while (a < 100)
    {
-      printf("%d\n", a);
+      println(a);
       t = a;
       a = t + p;
       p = t;

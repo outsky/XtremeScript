@@ -1,13 +1,13 @@
-int main() {
-    int i = 0;
-    int j = 0;
+func main() {
+    var i = 0;
+    var j = 0;
 
-    for (int i = 100; i > 0; i = i - 1) {
-        int i = 0;
-        int j = j * 2 + i;
+    for (var i = 100; i > 0; i = i - 1) {
+        var i = 0;
+        var j = j * 2 + i;
     }
 
-    int k = 3;
+    var k = 3;
 
     return j + k;
 }

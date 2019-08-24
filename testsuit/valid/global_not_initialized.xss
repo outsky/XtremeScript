@@ -1,7 +1,7 @@
-int foo;
+var foo;
 
-int main() {
-    for (int i = 0; i < 3; i = i + 1)
+func main() {
+    for (var i = 0; i < 3; i = i + 1)
         foo = foo + 1;
     return foo;
 }

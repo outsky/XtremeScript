@@ -1,8 +1,9 @@
-#include <stdio.h>
+host print();
+host println();
 
-int main()
+func main()
 {
-   int x, y, z;
+   var x, y, z;
 
    for (x = 0; x < 2; x++)
    {
@@ -10,7 +11,7 @@ int main()
       {
          for (z = 0; z < 3; z++)
          {
-            printf("%d %d %d\n", x, y, z);
+            print(x); print(" "); print(y); print(" "); println(z);
          }
       }
    }

@@ -1,6 +1,6 @@
-#include <stdio.h>
+host println();
 
-int factorial(int i) 
+func factorial(i) 
 {
    if (i < 2)
       return i;
@@ -8,12 +8,12 @@ int factorial(int i)
       return i * factorial(i - 1);
 }
 
-int main()
+func main()
 {
-   int Count;
+   var Count;
 
    for (Count = 1; Count <= 10; Count++)
-      printf("%d\n", factorial(Count));
+      println(factorial(Count));
 
    return 0;
 }

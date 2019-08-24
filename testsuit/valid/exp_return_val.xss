@@ -1,6 +1,6 @@
-int main() {
-    int a;
-    int b;
+func main() {
+    var a;
+    var b;
     a = b = 4;
     return a - b;
 }

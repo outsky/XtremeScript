@@ -1,4 +1,4 @@
-int fib(int n) {
+func fib(n) {
     if (n == 0 || n == 1) {
         return n;
     } else {
@@ -6,7 +6,7 @@ int fib(int n) {
     }
 }
 
-int main() {
-    int n = 5;
+func main() {
+    var n = 5;
     return fib(n);
 }

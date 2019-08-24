@@ -1,6 +1,6 @@
-int x, x = 3, x;
+var x, x = 3, x;
 
-int
+func
 main()
 {
 	if (x != 3)

@@ -1,4 +1,4 @@
-int main() {
-    int a;
+func main() {
+    var a;
     return 0;
 }

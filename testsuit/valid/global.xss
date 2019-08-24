@@ -1,5 +1,5 @@
-int foo = 4;
+var foo = 4;
 
-int main() {
+func main() {
     return foo + 3;
 }

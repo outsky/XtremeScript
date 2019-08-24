@@ -1,6 +1,6 @@
-int c;
+var c;
 
-int
+func
 main()
 {
 	if(0) {

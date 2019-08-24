@@ -1,16 +1,19 @@
-#include <stdio.h>
+host print();
+host println();
 
-int main() 
+func main() 
 {
-   int a;
+   var a;
    a = 42;
-   printf("%d\n", a);
+   println(a);
 
-   int b = 64;
-   printf("%d\n", b);
+   var b = 64;
+   println(b);
 
-   int c = 12, d = 34;
-   printf("%d, %d\n", c, d);
+   var c = 12, d = 34;
+   print(c);
+   print(", ");
+   println(d);
 
    return 0;
 }

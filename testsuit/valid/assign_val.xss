@@ -1,5 +1,5 @@
-int main() {
-    int a;
-    int b = a = 0;
+func main() {
+    var a;
+    var b = a = 0;
     return b;
 }

@@ -1,18 +1,21 @@
-#include <stdio.h>
+host print();
+host println();
 
-int main()
+func main()
 {
-   int Count;
+   var Count;
 
-   int Array[10] = { 12, 34, 56, 78, 90, 123, 456, 789, 8642, 9753 };
+   var Array[10] = { 12, 34, 56, 78, 90, 123, 456, 789, 8642, 9753 };
 
-   for (Count = 0; Count < 10; Count++)
-      printf("%d: %d\n", Count, Array[Count]);
+   for (Count = 0; Count < 10; Count++) {
+        print(Count); print(": "); println(Array[Count]);
+   }
 
-   int Array2[10] = { 12, 34, 56, 78, 90, 123, 456, 789, 8642, 9753, };
+   var Array2[10] = { 12, 34, 56, 78, 90, 123, 456, 789, 8642, 9753, };
 
-   for (Count = 0; Count < 10; Count++)
-      printf("%d: %d\n", Count, Array2[Count]);
+   for (Count = 0; Count < 10; Count++) {
+        print(Count); print(": "); println(Array2[Count]);
+   }
 
 
    return 0;

@@ -1,23 +1,24 @@
-#include <stdio.h>
+host print();
+host println();
 
-int array[16];
+var array[16];
 
 //Swap integer values by array indexes
-void swap(int a, int b)
+func swap(a, b)
 {
-   int tmp  = array[a];
+   var tmp  = array[a];
    array[a] = array[b];
    array[b] = tmp;
 }
 
 //Partition the array into two halves and return the
 //index about which the array is partitioned
-int partition(int left, int right)
+func partition(left, right)
 {
-   int pivotIndex = left;
-   int pivotValue = array[pivotIndex];
-   int index = left;
-   int i;
+   var pivotIndex = left;
+   var pivotValue = array[pivotIndex];
+   var index = left;
+   var i;
 
    swap(pivotIndex, right);
    for(i = left; i < right; i++)
@@ -34,19 +35,19 @@ int partition(int left, int right)
 }
 
 //Quicksort the array
-void quicksort(int left, int right)
+func quicksort(left, right)
 {
    if(left >= right)
       return;
 
-   int index = partition(left, right);
+   var index = partition(left, right);
    quicksort(left, index - 1);
    quicksort(index + 1, right);
 }
 
-int main()
+func main()
 {
-   int i;
+   var i;
 
    array[0] = 62;
    array[1] = 83;
@@ -65,17 +66,19 @@ int main()
    array[14] = 74;
    array[15] = 55;
 
-   for (i = 0; i < 16; i++)
-      printf("%d ", array[i]);
+   for (i = 0; i < 16; i++) {
+      print(array[i]); print(" ");
+   }
 
-   printf("\n");
+   println("");
 
    quicksort(0, 15);
 
-   for (i = 0; i < 16; i++)
-      printf("%d ", array[i]);
+   for (i = 0; i < 16; i++) {
+      print(array[i]); print(" ");
+   }
 
-   printf("\n");
+   println("");
 
    return 0;
 }

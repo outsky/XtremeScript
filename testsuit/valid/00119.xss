@@ -1,6 +1,6 @@
-double x = 100;
+var x = 100.0;
 
-int
+func
 main()
 {
 	return x < 1;

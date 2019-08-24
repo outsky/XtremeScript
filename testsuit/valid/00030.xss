@@ -1,10 +1,10 @@
-int
+func
 f()
 {
 	return 100;
 }
 
-int
+func
 main()
 {
 	if (f() > 1000)

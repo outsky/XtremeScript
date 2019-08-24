@@ -1,16 +1,19 @@
-#include <stdio.h>
+host print();
+host println();
 
-int main() 
+func main() 
 {
-   printf("Hello world\n");
+   println("Hello world");
 
    int Count;
-   for (Count = -5; Count <= 5; Count++)
-      printf("Count = %d\n", Count);
+   for (Count = -5; Count <= 5; Count++) {
+      print("Count = ");
+      println(Count);
+   }
 
-   printf("String 'hello', 'there' is '%s', '%s'\n", "hello", "there");
-   printf("Character 'A' is '%c'\n", 65);
-   printf("Character 'a' is '%c'\n", 'a');
+   print("String 'hello', 'there' is '");print("hello', '");println("there");
+   println("Character 'A' is 'A'");
+   println("Character 'a' is 'a'");
 
    return 0;
 }
