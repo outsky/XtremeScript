@@ -2,5 +2,5 @@
 
 for i in `ls *.ok`
 do
-    cp $i ${i%.*}.xss
+    cp $i ${i%%.*}.xss
 done
