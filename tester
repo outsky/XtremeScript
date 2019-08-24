@@ -53,7 +53,11 @@ test_valid() {
         if ! $runner $t > $scratchdir/t.out 2>&1; then
             result="[RunFail]"
         else
-            if ! diff -u "$t.ok" "$scratchdir/t.out"; then
+            okname="$t.ok"
+            if [ ! -f "$okname" ]; then
+                okname="$testdir/valid/empty.xss.ok"
+            fi
+            if ! diff -u "$okname" "$scratchdir/t.out"; then
                 result="[NotMatch]"
             fi
         fi
