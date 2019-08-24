@@ -606,12 +606,11 @@ int V_load(V_State *Vs, FILE *f) {
 }
 
 void V_run(V_State *Vs) {
+    _reset(Vs);
     if (Vs->mainidx < 0) {
         printf("No _Main(), nothing to run\n");
         return;
     }
-
-    _reset(Vs);
 
 #ifdef V_DEBUG
     _pstatus(Vs);
