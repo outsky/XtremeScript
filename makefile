@@ -20,7 +20,7 @@ icode.o: icode.h icode.c
 emitter.o: emitter.h emitter.c
 
 clean:
-	rm -f *.o xs.out
+	rm -f $(BIN) *.o 
 
 test:
 	./tester $(BIN)
