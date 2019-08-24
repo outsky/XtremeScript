@@ -335,7 +335,7 @@ static void _parse_op_log_and(P_State *ps) {
     P_add_func_icode(ps, EXIT);
 }
 
-static void _parse_op_le(P_State *ps) {
+static void _parse_op_relational(P_State *ps, I_OpCode op) {
     int jump_true_idx = _next_jumpidx(ps);
     int jump_exit_idx = _next_jumpidx(ps);
 
@@ -350,11 +350,11 @@ static void _parse_op_le(P_State *ps) {
     I_Code *POP_T0 = I_newinstr(I_OP_POP);
     I_addoperand(POP_T0, I_OT_VAR, 0, 0);
 
-    // JLE _T0, _T1, TRUE
-    I_Code *JLE = I_newinstr(I_OP_JLE);
-    I_addoperand(JLE, I_OT_VAR, 0, 0);
-    I_addoperand(JLE, I_OT_VAR, 1, 0);
-    I_addoperand(JLE, I_OT_JUMP, jump_true_idx, 0);
+    // <OP> _T0, _T1, TRUE
+    I_Code *OP = I_newinstr(op);
+    I_addoperand(OP, I_OT_VAR, 0, 0);
+    I_addoperand(OP, I_OT_VAR, 1, 0);
+    I_addoperand(OP, I_OT_JUMP, jump_true_idx, 0);
 
     // PUSH 0
     I_Code *PUSH_0 = I_newinstr(I_OP_PUSH);
@@ -376,7 +376,7 @@ static void _parse_op_le(P_State *ps) {
 
     P_add_func_icode(ps, POP_T1);
     P_add_func_icode(ps, POP_T0);
-    P_add_func_icode(ps, JLE);
+    P_add_func_icode(ps, OP);
     P_add_func_icode(ps, PUSH_0);
     P_add_func_icode(ps, JMP_EXIT);
     P_add_func_icode(ps, TRUE_LABEL);
@@ -389,13 +389,12 @@ static void _parse_exp(P_State *ps) {
 
     L_TokenType tt = L_nexttoken(ps->ls);
     switch (tt) {
-        case L_TT_OP_LOG_AND: {
-            _parse_op_log_and(ps);
-        } break;
+        case L_TT_OP_LOG_AND: {_parse_op_log_and(ps);} break;
 
-        case L_TT_OP_LE: {
-            _parse_op_le(ps);
-        } break;
+        case L_TT_OP_L: {_parse_op_relational(ps, I_OP_JL);} break;
+        case L_TT_OP_G: {_parse_op_relational(ps, I_OP_JG);} break;
+        case L_TT_OP_LE: {_parse_op_relational(ps, I_OP_JLE);} break;
+        case L_TT_OP_GE: {_parse_op_relational(ps, I_OP_JGE);} break;
 
         default: {
             L_cachenexttoken(ps->ls);
