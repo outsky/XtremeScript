@@ -422,6 +422,7 @@ static void _parse_exp(P_State *ps) {
     switch (tt) {
         case L_TT_OP_LOG_AND: {_parse_op_log_and(ps);} break;
         
+        case L_TT_OP_BIT_AND: {_parse_op_bitwise(ps, I_OP_AND);} break;
         case L_TT_OP_BIT_OR: {_parse_op_bitwise(ps, I_OP_OR);} break;
 
         case L_TT_OP_L: {_parse_op_relational(ps, I_OP_JL);} break;
