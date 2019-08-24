@@ -415,6 +415,32 @@ static void _parse_op_bitwise(P_State *ps, I_OpCode op) {
     P_add_func_icode(ps, PUSH_T0);
 }
 
+static void _parse_op_exp(P_State *ps) {
+    // POP _T0
+    I_Code *POP_T0 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_T0);
+
+    // do right
+    _parse_exp(ps);
+
+    // POP _T1
+    I_Code *POP_T1 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T1, I_OT_VAR, 1, 0);
+    P_add_func_icode(ps, POP_T1);
+
+    // EXP _T0, _T1
+    I_Code *OP = I_newinstr(I_OP_EXP);
+    I_addoperand(OP, I_OT_VAR, 0, 0);
+    I_addoperand(OP, I_OT_VAR, 1, 0);
+    P_add_func_icode(ps, OP);
+
+    // PUSH _T0
+    I_Code *PUSH_T0 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_T0, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, PUSH_T0);
+}
+
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
@@ -429,6 +455,8 @@ static void _parse_exp(P_State *ps) {
         case L_TT_OP_G: {_parse_op_relational(ps, I_OP_JG);} break;
         case L_TT_OP_LE: {_parse_op_relational(ps, I_OP_JLE);} break;
         case L_TT_OP_GE: {_parse_op_relational(ps, I_OP_JGE);} break;
+
+        case L_TT_OP_EXP: {_parse_op_exp(ps);} break;
 
         default: {
             L_cachenexttoken(ps->ls);
