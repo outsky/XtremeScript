@@ -1,0 +1,6 @@
+func main() {
+    {
+        var a;
+        var a;
+    }
+}

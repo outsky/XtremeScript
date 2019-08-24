@@ -1,0 +1,7 @@
+func foo(a){
+    return 3 + a;
+}
+
+func main(){
+    return foo();
+}

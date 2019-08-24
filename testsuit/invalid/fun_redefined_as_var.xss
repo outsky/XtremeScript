@@ -1,0 +1,9 @@
+func foo() {
+    return 3;
+}
+
+var foo = 4;
+
+func main() {
+    return foo;
+}
