@@ -50,7 +50,7 @@ test_valid() {
     for t in $testdir/valid/*.xss; do
         result=""
 
-        if ! timeout 5s $runner $t > $scratchdir/t.out 2>&1; then
+        if ! $runner $t > $scratchdir/t.out 2>&1; then
             result="[RunFail]"
         else
             if ! diff -u "$t.ok" "$scratchdir/t.out"; then
