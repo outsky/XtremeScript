@@ -68,6 +68,27 @@
 #define JNE_T0_T1_LABEL_1 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_VAR, 1, label1)
 #define JNE_T0_T1_LABEL_2 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_VAR, 1, label2)
 
+#define _OP_T0_T1(op) do {\
+    I_Code *c = I_newinstr(op);\
+    I_addoperand(c, I_OT_VAR, 0, 0);\
+    I_addoperand(c, I_OT_VAR, 1, 0);\
+    P_add_func_icode(ps, c);\
+} while (0)
+
+#define _OP_T0_T1_JMP(op, label) do {\
+    I_Code *c = I_newinstr(op);\
+    I_addoperand(c, I_OT_VAR, 0, 0);\
+    I_addoperand(c, I_OT_VAR, 1, 0);\
+    I_addoperand(c, I_OT_JUMP, label, 0);\
+    P_add_func_icode(ps, c);\
+} while (0)
+
+#define EXP_T0_T1 _OP_T0_T1(I_OP_EXP)
+#define ADD_T0_T1 _OP_T0_T1(I_OP_ADD)
+#define SUB_T0_T1 _OP_T0_T1(I_OP_SUB)
+#define MUL_T0_T1 _OP_T0_T1(I_OP_MUL)
+#define DIV_T0_T1 _OP_T0_T1(I_OP_DIV)
+
 static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
 
@@ -418,14 +439,7 @@ static void _parse_op_relational(P_State *ps, I_OpCode op) {
 
     POP_T1;
     POP_T0;
-
-    // <OP> _T0, _T1, TRUE
-    I_Code *OP = I_newinstr(op);
-    I_addoperand(OP, I_OT_VAR, 0, 0);
-    I_addoperand(OP, I_OT_VAR, 1, 0);
-    I_addoperand(OP, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, OP);
-
+    _OP_T0_T1_JMP(op, label1);
     PUSH_0;
     JMP_LABEL_2;
     LABEL_1;
@@ -440,13 +454,7 @@ static void _parse_op_bitwise(P_State *ps, I_OpCode op) {
     _parse_exp(ps);
 
     POP_T1;
-
-    // <OP> _T0, _T1
-    I_Code *OP = I_newinstr(op);
-    I_addoperand(OP, I_OT_VAR, 0, 0);
-    I_addoperand(OP, I_OT_VAR, 1, 0);
-    P_add_func_icode(ps, OP);
-
+    _OP_T0_T1(op);
     PUSH_T0;
 }
 
@@ -457,13 +465,7 @@ static void _parse_op_exp(P_State *ps) {
     _parse_exp(ps);
 
     POP_T1;
-
-    // EXP _T0, _T1
-    I_Code *OP = I_newinstr(I_OP_EXP);
-    I_addoperand(OP, I_OT_VAR, 0, 0);
-    I_addoperand(OP, I_OT_VAR, 1, 0);
-    P_add_func_icode(ps, OP);
-
+    EXP_T0_T1;
     PUSH_T0;
 }
 
@@ -507,16 +509,11 @@ static void _parse_subexp(P_State *ps) {
         POP_T1;
         POP_T0;
 
-        // ADD|SUB _T0, _T1
-        I_Code *ADDSUB_T0_T1 = NULL;
         if (tt == L_TT_OP_ADD) {
-            ADDSUB_T0_T1 = I_newinstr(I_OP_ADD);
+            ADD_T0_T1;
         } else {
-            ADDSUB_T0_T1 = I_newinstr(I_OP_SUB);
+            SUB_T0_T1;
         }
-        I_addoperand(ADDSUB_T0_T1, I_OT_VAR, 0, 0);
-        I_addoperand(ADDSUB_T0_T1, I_OT_VAR, 1, 0);
-        P_add_func_icode(ps, ADDSUB_T0_T1);
 
         PUSH_T0;
     }
@@ -536,16 +533,11 @@ static void _parse_term(P_State *ps) {
         POP_T1;
         POP_T0;
 
-        // MUL|DIV _T0, _T1
-        I_Code *MULDIV_T0_T1 = NULL;
         if (tt == L_TT_OP_MUL) {
-            MULDIV_T0_T1 = I_newinstr(I_OP_MUL);
+            MUL_T0_T1;
         } else {
-            MULDIV_T0_T1 = I_newinstr(I_OP_DIV);
+            DIV_T0_T1;
         }
-        I_addoperand(MULDIV_T0_T1, I_OT_VAR, 0, 0);
-        I_addoperand(MULDIV_T0_T1, I_OT_VAR, 1, 0);
-        P_add_func_icode(ps, MULDIV_T0_T1);
 
         PUSH_T0;
     }
@@ -622,6 +614,7 @@ static void _parse_factor(P_State *ps) {
             
             POP_T0;
 
+            // NEG _T0
             I_Code *NEG = I_newinstr(I_OP_NEG);
             I_addoperand(NEG, I_OT_VAR, 0, 0);
             P_add_func_icode(ps, NEG);
