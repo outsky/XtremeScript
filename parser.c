@@ -419,11 +419,26 @@ static void _parse_op_log_eq(P_State *ps) {
 
     POP_T0;
 
-    // do exp
     _parse_exp(ps);
 
     POP_T1;
     JE_T0_T1_LABEL_1;
+    PUSH_0;
+    JMP_LABEL_2;
+    LABEL_1;
+    PUSH_1;
+    LABEL_2;
+}
+
+static void _parse_op_log_neq(P_State *ps) {
+    GetJumpLabels();
+
+    POP_T0;
+
+    _parse_exp(ps);
+
+    POP_T1;
+    JNE_T0_T1_LABEL_1;
     PUSH_0;
     JMP_LABEL_2;
     LABEL_1;
@@ -478,6 +493,7 @@ static void _parse_exp(P_State *ps) {
         case L_TT_OP_LOG_OR: {_parse_op_log_or(ps);} break;
         case L_TT_OP_LOG_NOT: {_parse_op_log_not(ps);} break;
         case L_TT_OP_LOG_EQ: {_parse_op_log_eq(ps);} break;
+        case L_TT_OP_LOG_NEQ: {_parse_op_log_neq(ps);} break;
         
         case L_TT_OP_BIT_AND: {_parse_op_bitwise(ps, I_OP_AND);} break;
         case L_TT_OP_BIT_OR: {_parse_op_bitwise(ps, I_OP_OR);} break;
