@@ -51,6 +51,23 @@
 #define JMP_LABEL_1 _JMP(label1)
 #define JMP_LABEL_2 _JMP(label2)
 
+#define _COND_JMP(op, ot1, n1, ot2, n2, label) do {\
+    I_Code *c = I_newinstr(op);\
+    I_addoperand(c, ot1, n1, 0);\
+    I_addoperand(c, ot2, n2, 0);\
+    I_addoperand(c, I_OT_JUMP, label, 0);\
+    P_add_func_icode(ps, c);\
+} while (0)
+
+#define JE_T0_0_LABEL_1 _COND_JMP(I_OP_JE, I_OT_VAR, 0, I_OT_INT, 0, label1)
+#define JE_T0_0_LABEL_2 _COND_JMP(I_OP_JE, I_OT_VAR, 0, I_OT_INT, 0, label2)
+#define JNE_T0_0_LABEL_1 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_INT, 0, label1)
+#define JNE_T0_0_LABEL_2 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_INT, 0, label2)
+#define JE_T0_T1_LABEL_1 _COND_JMP(I_OP_JE, I_OT_VAR, 0, I_OT_VAR, 1, label1)
+#define JE_T0_T1_LABEL_2 _COND_JMP(I_OP_JE, I_OT_VAR, 0, I_OT_VAR, 1, label2)
+#define JNE_T0_T1_LABEL_1 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_VAR, 1, label1)
+#define JNE_T0_T1_LABEL_2 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_VAR, 1, label2)
+
 static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
 
@@ -329,26 +346,13 @@ static void _parse_op_log_and(P_State *ps) {
     GetJumpLabels();
 
     POP_T0;
-
-    // JE _T0, 0, FALSE
-    I_Code *JE_1 = I_newinstr(I_OP_JE);
-    I_addoperand(JE_1, I_OT_VAR, 0, 0);
-    I_addoperand(JE_1, I_OT_INT, 0, 0);
-    I_addoperand(JE_1, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JE_1);
+    JE_T0_0_LABEL_1;
 
     // do exp
     _parse_exp(ps);
 
     POP_T0;
-
-    // JE _T0, 0, FALSE
-    I_Code *JE_2 = I_newinstr(I_OP_JE);
-    I_addoperand(JE_2, I_OT_VAR, 0, 0);
-    I_addoperand(JE_2, I_OT_INT, 0, 0);
-    I_addoperand(JE_2, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JE_2);
-
+    JE_T0_0_LABEL_1;
     PUSH_1;
     JMP_LABEL_2;
     LABEL_1;
@@ -360,26 +364,13 @@ static void _parse_op_log_or(P_State *ps) {
     GetJumpLabels();
 
     POP_T0;
-
-    // JNE _T0, 0, TRUE 
-    I_Code *JNE_1 = I_newinstr(I_OP_JNE);
-    I_addoperand(JNE_1, I_OT_VAR, 0, 0);
-    I_addoperand(JNE_1, I_OT_INT, 0, 0);
-    I_addoperand(JNE_1, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JNE_1);
+    JNE_T0_0_LABEL_1;
 
     // PUSH op2
     _parse_exp(ps);
 
     POP_T0;
-
-    // JNE _T0, 0, TRUE
-    I_Code *JNE_2 = I_newinstr(I_OP_JNE);
-    I_addoperand(JNE_2, I_OT_VAR, 0, 0);
-    I_addoperand(JNE_2, I_OT_INT, 0, 0);
-    I_addoperand(JNE_2, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JNE_2);
-
+    JNE_T0_0_LABEL_1;
     PUSH_0;
     JMP_LABEL_2;
     LABEL_1;
@@ -394,14 +385,7 @@ static void _parse_op_log_not(P_State *ps) {
     _parse_exp(ps);
 
     POP_T0;
-
-    // JE _T0, 0, TRUE
-    I_Code *JE = I_newinstr(I_OP_JE);
-    I_addoperand(JE, I_OT_VAR, 0, 0);
-    I_addoperand(JE, I_OT_INT, 0, 0);
-    I_addoperand(JE, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JE);
-
+    JE_T0_0_LABEL_1;
     PUSH_0;
     JMP_LABEL_2;
     LABEL_1;
@@ -418,14 +402,7 @@ static void _parse_op_log_eq(P_State *ps) {
     _parse_exp(ps);
 
     POP_T1;
-
-    // JE _T0, _T1, TRUE
-    I_Code *JE = I_newinstr(I_OP_JE);
-    I_addoperand(JE, I_OT_VAR, 0, 0);
-    I_addoperand(JE, I_OT_VAR, 1, 0);
-    I_addoperand(JE, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JE);
-
+    JE_T0_T1_LABEL_1;
     PUSH_0;
     JMP_LABEL_2;
     LABEL_1;
@@ -808,13 +785,7 @@ static void _parse_while(P_State *ps) {
     }
 
     POP_T0;
-
-    // JE _T0, 0, QUIT
-    I_Code *JE = I_newinstr(I_OP_JE);
-    I_addoperand(JE, I_OT_VAR, 0, 0);
-    I_addoperand(JE, I_OT_INT, 0, 0);
-    I_addoperand(JE, I_OT_JUMP, label2, 0);
-    P_add_func_icode(ps, JE);
+    JE_T0_0_LABEL_2;
 
     // do body
     _parse_statement(ps);
@@ -856,6 +827,8 @@ static void _parse_continue(P_State *ps) {
 }
 
 static void _parse_if(P_State *ps) {
+    GetJumpLabels();
+
     if (ps->curfunc < 0) {
         P_FATAL("if cant in global scope");
     }
@@ -868,15 +841,7 @@ static void _parse_if(P_State *ps) {
     _parse_exp(ps);
 
     POP_T0;
-
-    GetJumpLabels();
-
-    // JE _T0, 0, ELSE
-    I_Code *JE = I_newinstr(I_OP_JE);
-    I_addoperand(JE, I_OT_VAR, 0, 0);
-    I_addoperand(JE, I_OT_INT, 0, 0);
-    I_addoperand(JE, I_OT_JUMP, label1, 0);
-    P_add_func_icode(ps, JE);
+    JE_T0_0_LABEL_1;
 
     if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
         P_FATAL("`)' expected by if");
