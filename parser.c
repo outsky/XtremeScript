@@ -34,6 +34,13 @@
     int label1 = _next_jumpidx(ps);\
     int label2 = _next_jumpidx(ps)
 
+#define _LABEL(l) do {\
+    I_Code *c = I_newjump(l);\
+    P_add_func_icode(ps, c);\
+} while (0)
+
+#define LABEL_1 _LABEL(label1)
+#define LABEL_2 _LABEL(label2)
 
 static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
@@ -340,15 +347,9 @@ static void _parse_op_log_and(P_State *ps) {
     I_addoperand(JMP_EXIT, I_OT_JUMP, label2, 0);
     P_add_func_icode(ps, JMP_EXIT);
 
-    // FALSE label
-    I_Code *FALSE = I_newjump(label1);
-    P_add_func_icode(ps, FALSE);
-
+    LABEL_1;
     PUSH_0;
-
-    // EXIT label
-    I_Code *EXIT = I_newjump(label2);
-    P_add_func_icode(ps, EXIT);
+    LABEL_2;
 }
 
 static void _parse_op_log_or(P_State *ps) {
@@ -382,15 +383,9 @@ static void _parse_op_log_or(P_State *ps) {
     I_addoperand(JMP_EXIT, I_OT_JUMP, label2, 0);
     P_add_func_icode(ps, JMP_EXIT);
 
-    // TRUE:
-    I_Code *TRUE = I_newjump(label1);
-    P_add_func_icode(ps, TRUE);
-
+    LABEL_1;
     PUSH_1;
-
-    // EXIT:
-    I_Code *EXIT = I_newjump(label2);
-    P_add_func_icode(ps, EXIT);
+    LABEL_2;
 }
 
 static void _parse_op_log_not(P_State *ps) {
@@ -415,15 +410,9 @@ static void _parse_op_log_not(P_State *ps) {
     I_addoperand(JMP_EXIT, I_OT_JUMP, label2, 0);
     P_add_func_icode(ps, JMP_EXIT);
    
-    // TRUE:
-    I_Code *TRUE = I_newjump(label1);
-    P_add_func_icode(ps, TRUE);
-
+    LABEL_1;
     PUSH_1;
-
-    // EXIT:
-    I_Code *EXIT = I_newjump(label2);
-    P_add_func_icode(ps, EXIT);
+    LABEL_2;
 }
 
 static void _parse_op_log_eq(P_State *ps) {
@@ -450,15 +439,9 @@ static void _parse_op_log_eq(P_State *ps) {
     I_addoperand(JMP_EXIT, I_OT_JUMP, label2, 0);
     P_add_func_icode(ps, JMP_EXIT);
     
-    // TRUE:
-    I_Code *TRUE = I_newjump(label1);
-    P_add_func_icode(ps, TRUE);
-
+    LABEL_1;
     PUSH_1;
-
-    // EXIT:
-    I_Code *EXIT = I_newjump(label2);
-    P_add_func_icode(ps, EXIT);
+    LABEL_2;
 }
 
 static void _parse_op_relational(P_State *ps, I_OpCode op) {
@@ -484,15 +467,9 @@ static void _parse_op_relational(P_State *ps, I_OpCode op) {
     I_addoperand(JMP_EXIT, I_OT_JUMP, label2, 0);
     P_add_func_icode(ps, JMP_EXIT);
 
-    // TRUE label
-    I_Code *TRUE_LABEL = I_newjump(label1);
-    P_add_func_icode(ps, TRUE_LABEL);
-
+    LABEL_1;
     PUSH_1;
-
-    // EXIT label
-    I_Code *EXIT_LABEL = I_newjump(label2);
-    P_add_func_icode(ps, EXIT_LABEL);
+    LABEL_2;
 }
 
 static void _parse_op_bitwise(P_State *ps, I_OpCode op) {
@@ -835,9 +812,7 @@ static void _parse_while(P_State *ps) {
     _set_continue_label(ps, label1);
     _set_break_label(ps, label2);
 
-    // LOOP:
-    I_Code *LOOP_LABEL = I_newjump(label1);
-    P_add_func_icode(ps, LOOP_LABEL);
+    LABEL_1;
 
     if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
         P_FATAL("`(' expected by while");
@@ -865,9 +840,7 @@ static void _parse_while(P_State *ps) {
     I_addoperand(JMP_LOOP, I_OT_JUMP, label1, 0);
     P_add_func_icode(ps, JMP_LOOP);
 
-    // QUIT:
-    I_Code *QUIT_LABEL = I_newjump(label2);
-    P_add_func_icode(ps, QUIT_LABEL);
+    LABEL_2;
 }
 
 static void _parse_break(P_State *ps) {
@@ -945,9 +918,7 @@ static void _parse_if(P_State *ps) {
     I_addoperand(JMP_QUIT, I_OT_JUMP, label2, 0);
     P_add_func_icode(ps, JMP_QUIT);
 
-    // ELSE:
-    I_Code *ELSE = I_newjump(label1);
-    P_add_func_icode(ps, ELSE);
+    LABEL_1;
 
     if (L_nexttoken(ps->ls) == L_TT_ELSE) {
         // do false block
@@ -956,9 +927,7 @@ static void _parse_if(P_State *ps) {
         L_cachenexttoken(ps->ls);
     }
     
-    // QUIT:
-    I_Code *QUIT = I_newjump(label2);
-    P_add_func_icode(ps, QUIT);
+    LABEL_2;
 }
 
 void P_add_func_icode(P_State *ps, void *icode) {
