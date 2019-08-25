@@ -340,6 +340,152 @@ static void _parse_op_log_and(P_State *ps) {
     P_add_func_icode(ps, EXIT);
 }
 
+static void _parse_op_log_or(P_State *ps) {
+    int jump_true_idx = _next_jumpidx(ps);
+    int jump_exit_idx = _next_jumpidx(ps);
+
+    // POP _T0
+    I_Code *POP_1 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_1, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_1);
+
+    // JNE _T0, 0, TRUE 
+    I_Code *JNE_1 = I_newinstr(I_OP_JNE);
+    I_addoperand(JNE_1, I_OT_VAR, 0, 0);
+    I_addoperand(JNE_1, I_OT_INT, 0, 0);
+    I_addoperand(JNE_1, I_OT_JUMP, jump_true_idx, 0);
+    P_add_func_icode(ps, JNE_1);
+
+    // PUSH op2
+    _parse_exp(ps);
+
+    // POP _T0
+    I_Code *POP_2 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_2, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_2);
+
+    // JNE _T0, 0, TRUE
+    I_Code *JNE_2 = I_newinstr(I_OP_JNE);
+    I_addoperand(JNE_2, I_OT_VAR, 0, 0);
+    I_addoperand(JNE_2, I_OT_INT, 0, 0);
+    I_addoperand(JNE_2, I_OT_JUMP, jump_true_idx, 0);
+    P_add_func_icode(ps, JNE_2);
+
+    // PUSH 0
+    I_Code *PUSH_0 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_0, I_OT_INT, 0, 0);
+    P_add_func_icode(ps, PUSH_0);
+
+    // JMP EXIT
+    I_Code *JMP_EXIT = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP_EXIT, I_OT_JUMP, jump_exit_idx, 0);
+    P_add_func_icode(ps, JMP_EXIT);
+
+    // TRUE:
+    I_Code *TRUE = I_newjump(jump_true_idx);
+    P_add_func_icode(ps, TRUE);
+
+    // PUSH 1
+    I_Code *PUSH_1 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_1, I_OT_INT, 1, 0);
+    P_add_func_icode(ps, PUSH_1);
+
+    // EXIT:
+    I_Code *EXIT = I_newjump(jump_exit_idx);
+    P_add_func_icode(ps, EXIT);
+}
+
+static void _parse_op_log_not(P_State *ps) {
+    int jump_true_idx = _next_jumpidx(ps);
+    int jump_exit_idx = _next_jumpidx(ps);
+
+    // do exp
+    _parse_exp(ps);
+
+    // POP _T0
+    I_Code *POP_T0 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_T0);
+
+    // JE _T0, 0, TRUE
+    I_Code *JE = I_newinstr(I_OP_JE);
+    I_addoperand(JE, I_OT_VAR, 0, 0);
+    I_addoperand(JE, I_OT_INT, 0, 0);
+    I_addoperand(JE, I_OT_JUMP, jump_true_idx, 0);
+    P_add_func_icode(ps, JE);
+
+    // PUSH 0
+    I_Code *PUSH_0 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_0, I_OT_INT, 0, 0);
+    P_add_func_icode(ps, PUSH_0);
+
+    // JMP EXIT
+    I_Code *JMP_EXIT = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP_EXIT, I_OT_JUMP, jump_exit_idx, 0);
+    P_add_func_icode(ps, JMP_EXIT);
+   
+    // TRUE:
+    I_Code *TRUE = I_newjump(jump_true_idx);
+    P_add_func_icode(ps, TRUE);
+
+    // PUSH 1
+    I_Code *PUSH_1 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_1, I_OT_INT, 1, 0);
+    P_add_func_icode(ps, PUSH_1);
+
+    // EXIT:
+    I_Code *EXIT = I_newjump(jump_exit_idx);
+    P_add_func_icode(ps, EXIT);
+}
+
+static void _parse_op_log_eq(P_State *ps) {
+    int jump_true_idx = _next_jumpidx(ps);
+    int jump_exit_idx = _next_jumpidx(ps);
+
+    // POP _T0
+    I_Code *POP_T0 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 0, 0);
+    P_add_func_icode(ps, POP_T0);
+
+    // do exp
+    _parse_exp(ps);
+
+    // POP _T1
+    I_Code *POP_T1 = I_newinstr(I_OP_POP);
+    I_addoperand(POP_T0, I_OT_VAR, 1, 0);
+    P_add_func_icode(ps, POP_T1);
+
+    // JE _T0, _T1, TRUE
+    I_Code *JE = I_newinstr(I_OP_JE);
+    I_addoperand(JE, I_OT_VAR, 0, 0);
+    I_addoperand(JE, I_OT_VAR, 1, 0);
+    I_addoperand(JE, I_OT_JUMP, jump_true_idx, 0);
+    P_add_func_icode(ps, JE);
+
+    // PUSH 0
+    I_Code *PUSH_0 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_0, I_OT_INT, 0, 0);
+    P_add_func_icode(ps, PUSH_0);
+
+    // JMP EXIT
+    I_Code *JMP_EXIT = I_newinstr(I_OP_JMP);
+    I_addoperand(JMP_EXIT, I_OT_JUMP, jump_exit_idx, 0);
+    P_add_func_icode(ps, JMP_EXIT);
+    
+    // TRUE:
+    I_Code *TRUE = I_newjump(jump_true_idx);
+    P_add_func_icode(ps, TRUE);
+
+    // PUSH 1
+    I_Code *PUSH_1 = I_newinstr(I_OP_PUSH);
+    I_addoperand(PUSH_1, I_OT_INT, 1, 0);
+    P_add_func_icode(ps, PUSH_1);
+
+    // EXIT:
+    I_Code *EXIT = I_newjump(jump_exit_idx);
+    P_add_func_icode(ps, EXIT);
+}
+
 static void _parse_op_relational(P_State *ps, I_OpCode op) {
     int jump_true_idx = _next_jumpidx(ps);
     int jump_exit_idx = _next_jumpidx(ps);
@@ -447,6 +593,9 @@ static void _parse_exp(P_State *ps) {
     L_TokenType tt = L_nexttoken(ps->ls);
     switch (tt) {
         case L_TT_OP_LOG_AND: {_parse_op_log_and(ps);} break;
+        case L_TT_OP_LOG_OR: {_parse_op_log_or(ps);} break;
+        case L_TT_OP_LOG_NOT: {_parse_op_log_not(ps);} break;
+        case L_TT_OP_LOG_EQ: {_parse_op_log_eq(ps);} break;
         
         case L_TT_OP_BIT_AND: {_parse_op_bitwise(ps, I_OP_AND);} break;
         case L_TT_OP_BIT_OR: {_parse_op_bitwise(ps, I_OP_OR);} break;
