@@ -378,7 +378,6 @@ static void _parse_op_log_and(P_State *ps) {
     POP_T0;
     JE_T0_0_LABEL_1;
 
-    // do exp
     _parse_exp(ps);
 
     POP_T0;
@@ -396,7 +395,6 @@ static void _parse_op_log_or(P_State *ps) {
     POP_T0;
     JNE_T0_0_LABEL_1;
 
-    // PUSH op2
     _parse_exp(ps);
 
     POP_T0;
@@ -411,7 +409,6 @@ static void _parse_op_log_or(P_State *ps) {
 static void _parse_op_log_not(P_State *ps) {
     GetJumpLabels();
 
-    // do exp
     _parse_exp(ps);
 
     POP_T0;
@@ -458,7 +455,6 @@ static void _parse_op_log_neq(P_State *ps) {
 static void _parse_op_relational(P_State *ps, I_OpCode op) {
     GetJumpLabels();
 
-    // PUSH op2
     _parse_exp(ps);
 
     POP_T1;
@@ -474,7 +470,6 @@ static void _parse_op_relational(P_State *ps, I_OpCode op) {
 static void _parse_op_bitwise(P_State *ps, I_OpCode op) {
     POP_T0;
 
-    // do right
     _parse_exp(ps);
 
     POP_T1;
@@ -485,7 +480,6 @@ static void _parse_op_bitwise(P_State *ps, I_OpCode op) {
 static void _parse_op_exp(P_State *ps) {
     POP_T0;
 
-    // do right
     _parse_exp(ps);
 
     POP_T1;
