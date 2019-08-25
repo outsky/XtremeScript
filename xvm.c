@@ -7,8 +7,6 @@
 
 //#define V_DEBUG 
 
-#define V_FATAL(msg) error(msg)
-
 /* static function declarations */
 static void _freevalue(V_Value *v);
 
@@ -207,7 +205,7 @@ static double _getopvalue_float(V_State *Vs, int idx) {
     } else if (v->type == A_OT_FLOAT) {
         return v->u.f;
     }
-    V_FATAL("cant covert to double");
+    error("cant covert to double");
     return 0.0;
 }
 
@@ -224,7 +222,7 @@ static void _run_math(V_State *Vs, A_OpCode op) {
         case A_OP_EXP: {result = pow(l, r);} break;
 
         default: {
-            V_FATAL("unsupported op");
+            error("unsupported op");
         }
     }
     
@@ -249,7 +247,7 @@ static void _run_mod(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
     if (dest->type != A_OT_INT || src->type != A_OT_INT) {
-        V_FATAL("mod(`%') only support int");
+        error("mod(`%') only support int");
     }
     dest->u.n %= src->u.n;
 }
@@ -263,7 +261,7 @@ static void _run_neg(V_State *Vs, const V_Instr *ins) {
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f = -dest->u.f;
     } else {
-        V_FATAL("math neg only supports int and float");
+        error("math neg only supports int and float");
     }
 }
 static void _run_inc(V_State *Vs, const V_Instr *ins) {
@@ -417,7 +415,7 @@ static void _run_callhost(V_State *Vs, const V_Instr *ins) {
     int idx = ins->ops[0].u.n;
     const char *api = _getapi(Vs, idx);
     if (api == NULL) {
-        V_FATAL("host api not found");
+        error("host api not found");
     }
 
     ExportApi fn = _getexportapi(Vs, api);
@@ -642,7 +640,7 @@ void V_run(V_State *Vs) {
             case A_OP_CALLHOST: { _run_callhost(Vs, ins); } break;
             case A_OP_PAUSE: { _run_pause(Vs, ins); } break;
             case A_OP_EXIT: { _run_exit(Vs, ins); } break;
-            default: { V_FATAL("unknown op"); } break;
+            default: { error("unknown op"); } break;
         }
         if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;
@@ -671,7 +669,7 @@ static void _print(V_State *vs) {
         } break;
 
         default: {
-            V_FATAL("unsupported optype by _print");
+            error("unsupported optype by _print");
         }
     }
 }
@@ -691,7 +689,7 @@ static void _println(V_State *vs) {
         } break;
 
         default: {
-            V_FATAL("unsupported optype by _println");
+            error("unsupported optype by _println");
         }
     }
 }
