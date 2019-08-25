@@ -7,6 +7,12 @@
 
 //#define P_DEBUG
 
+#define expect(tt) do {\
+    if (L_nexttoken(ps->ls) != tt) {\
+        error("%d expected, but got %d", tt, ps->ls->curtoken.type);\
+    }\
+} while (0)
+
 #define _POP(t, n) do {\
     I_Code *c = I_newinstr(I_OP_POP);\
     I_addoperand(c, t, n, 0);\
@@ -278,9 +284,7 @@ static void _parse_block(P_State *ps) {
 }
 
 static void _parse_var(P_State *ps) {
-    if (L_nexttoken(ps->ls) != L_TT_IDENT) {
-        error("ident expected by `var'");
-    }
+    expect(L_TT_IDENT);
     char *id = strdup(ps->ls->curtoken.u.s);
 
     int size = 1;
@@ -297,9 +301,7 @@ static void _parse_var(P_State *ps) {
     } else {
         L_cachenexttoken(ps->ls);
     }
-    if (L_nexttoken(ps->ls) != L_TT_SEM) {
-        error("`;' expected by var declare");
-    }
+    expect(L_TT_SEM);
 
     _add_symbol(ps, id, size, ps->curfunc, 0);
     free(id);
@@ -310,9 +312,7 @@ static void _parse_func(P_State *ps) {
         error("nested func declare is not allowed");
     }
     ps->curfunc = ps->funcs->count;
-    if (L_nexttoken(ps->ls) != L_TT_IDENT) {
-        error("ident expected by `func'");
-    }
+    expect(L_TT_IDENT);
     char *id = strdup(ps->ls->curtoken.u.s);
     
     if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
@@ -344,27 +344,17 @@ static void _parse_func(P_State *ps) {
     _add_func(ps, id, param, 0);
     free(id);
 
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACE) {
-        error("`{' expected by func declare");
-    }
+    expect(L_TT_OPEN_BRACE);
     _parse_block(ps);
     ps->curfunc = -1;
 }
 
 static void _parse_host(P_State *ps) {
-    if (L_nexttoken(ps->ls) != L_TT_IDENT) {
-        error("ident expected by host import");
-    }
+    expect(L_TT_IDENT);
     char *id = strdup(ps->ls->curtoken.u.s);
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
-        error("`(' expected by host import");
-    }
-    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
-        error("`)' expected by host import");
-    }
-    if (L_nexttoken(ps->ls) != L_TT_SEM) {
-        error("`;' expected by host import");
-    }
+    expect(L_TT_OPEN_PAR);
+    expect(L_TT_CLOSE_PAR);
+    expect(L_TT_SEM);
 
     _add_func(ps, id, 0, 1);
     free(id);
@@ -592,9 +582,7 @@ static void _parse_factor(P_State *ps) {
     L_TokenType tt = L_nexttoken(ps->ls);
     if (tt == L_TT_OPEN_PAR) {
         _parse_exp(ps);
-        if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
-            error("`)' expected by exp");
-        }
+        expect(L_TT_CLOSE_PAR);
         return;
     }
 
@@ -625,9 +613,7 @@ static void _parse_factor(P_State *ps) {
                             error("unexpected `[' applied to var");
                         }
                         _parse_exp(ps);
-                        if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
-                            error("missing `]'");
-                        }
+                        expect(L_TT_CLOSE_BRACKET);
                         POP_T0;
 
                         _PUSH(I_OT_ARRAY_REL, sb->idx);
@@ -683,9 +669,7 @@ static void _parse_func_call(P_State *ps) {
     if (fn == NULL) {
         error("not a function");
     }
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
-        error("`(' expected by function call");
-    }
+    expect(L_TT_OPEN_PAR);
 
     int param = 0;
     for (;;) {
@@ -697,9 +681,7 @@ static void _parse_func_call(P_State *ps) {
         _parse_exp(ps);
 
         if (++param < fn->param) {
-            if (L_nexttoken(ps->ls) != L_TT_COMMA) {
-                error("`,' expected by function call param list");
-            }
+            expect(L_TT_COMMA);
         }
     }
 
@@ -725,13 +707,9 @@ static void _parse_assign(P_State *ps) {
         error("not a var");
     }
     if (sb->size > 1) {
-        if (L_nexttoken(ps->ls) != L_TT_OPEN_BRACKET) {
-            error("`[' expected by array access");
-        }
+        expect(L_TT_OPEN_BRACKET);
         _parse_exp(ps);
-        if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
-            error("`]' expected by array access");
-        }
+        expect(L_TT_CLOSE_BRACKET);
     }
 
     I_OpCode opc = -1;
@@ -757,9 +735,7 @@ static void _parse_assign(P_State *ps) {
     I_Code *OP = I_newinstr(opc);
 
     _parse_exp(ps);
-    if (L_nexttoken(ps->ls) != L_TT_SEM) {
-        error("`;' expected by assign");
-    }
+    expect(L_TT_SEM);
 
     if (sb->size == 1) {
         /* var */
@@ -793,9 +769,7 @@ static void _parse_return(P_State *ps) {
 
     _parse_exp(ps);
 
-    if (L_nexttoken(ps->ls) != L_TT_SEM) {
-        error("`;' expected by return");
-    }
+    expect(L_TT_SEM);
 
     POP_RetVal;
 }
@@ -811,19 +785,13 @@ static void _parse_while(P_State *ps) {
 
     LABEL_1;
 
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
-        error("`(' expected by while");
-    }
-    // do condition
+    expect(L_TT_OPEN_PAR);
     _parse_exp(ps);
-    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
-        error("`)' expected by while");
-    }
+    expect(L_TT_CLOSE_PAR);
 
     POP_T0;
     JE_T0_0_LABEL_2;
 
-    // do body
     _parse_statement(ps);
 
     JMP_LABEL_1;
@@ -835,9 +803,7 @@ static void _parse_break(P_State *ps) {
         error("break cant in global scope");
     }
 
-    if (L_nexttoken(ps->ls) != L_TT_SEM) {
-        error("`;' expected by break");
-    }
+    expect(L_TT_SEM);
 
     int label = _get_break_label(ps);
     if (label < 0) {
@@ -851,9 +817,7 @@ static void _parse_continue(P_State *ps) {
         error("continue cant in global scope");
     }
 
-    if (L_nexttoken(ps->ls) != L_TT_SEM) {
-        error("`;' expected by continue");
-    }
+    expect(L_TT_SEM);
 
     int label = _get_continue_label(ps);
     if (label < 0) {
@@ -869,9 +833,7 @@ static void _parse_if(P_State *ps) {
         error("if cant in global scope");
     }
 
-    if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
-        error("`(' expected by if");
-    }
+    expect(L_TT_OPEN_PAR);
 
     // do condition
     _parse_exp(ps);
@@ -879,9 +841,7 @@ static void _parse_if(P_State *ps) {
     POP_T0;
     JE_T0_0_LABEL_1;
 
-    if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
-        error("`)' expected by if");
-    }
+    expect(L_TT_CLOSE_PAR);
 
     // do true block
     _parse_statement(ps);
@@ -937,9 +897,7 @@ static void _parse_statement(P_State *ps) {
                 break;
             }
             _parse_func_call(ps);
-            if (L_nexttoken(ps->ls) != L_TT_SEM) {
-                error("`;' expected by function call");
-            }
+            expect(L_TT_SEM);
         } break;
 
         case L_TT_RETURN: {_parse_return(ps);} break;
