@@ -360,7 +360,7 @@ void L_printtoken(const L_Token *t) {
     } else if (t->type == L_TT_STRING || t->type == L_TT_IDENT) {
         printf("%s", t->u.s);
     } else {
-        printf("<%d>", t->type);
+        printf("`%s'", L_ttname(t->type));
     }
 }
 

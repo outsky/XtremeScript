@@ -907,8 +907,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_IF: {_parse_if(ps);} break;
 
         default: {
-            L_printtoken(&ps->ls->curtoken);
-            error("unexpected token");
+            error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
         } break;
     }
 }
