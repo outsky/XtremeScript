@@ -7,6 +7,8 @@
 
 //#define V_DEBUG 
 
+#define V_FATAL(msg) fatal(__FILE__, __LINE__, msg)
+
 /* static function declarations */
 static void _freevalue(V_Value *v);
 
@@ -197,88 +199,62 @@ static void _run_mov(V_State *Vs, const V_Instr *ins) {
     V_Value *src = _getopvalue(Vs, 1);
     _copy(dest, src);
 }
-static void _run_add(V_State *Vs, const V_Instr *ins) {
+
+static double _getopvalue_float(V_State *Vs, int idx) {
+    const V_Value *v = _getopvalue(Vs, idx);
+    if (v->type == A_OT_INT) {
+        return (double)v->u.n;
+    } else if (v->type == A_OT_FLOAT) {
+        return v->u.f;
+    }
+    V_FATAL("cant covert to double");
+    return 0.0;
+}
+
+static void _run_math(V_State *Vs, A_OpCode op) {
+    double l = _getopvalue_float(Vs, 0);
+    double r = _getopvalue_float(Vs, 1);
+    double result = 0.0;
+
+    switch (op) {
+        case A_OP_ADD: {result = l + r;} break;
+        case A_OP_SUB: {result = l - r;} break;
+        case A_OP_MUL: {result = l * r;} break;
+        case A_OP_DIV: {result = l / r;} break;
+        case A_OP_EXP: {result = pow(l, r);} break;
+
+        default: {
+            V_FATAL("unsupported op");
+        }
+    }
+    
     V_Value *dest = _getopvalue(Vs, 0);
-    V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != src->type) {
-        fatal(__FILE__, __LINE__, "math ops must have the same type");
-    }
-    if (dest->type == A_OT_INT) {
-        dest->u.n += src->u.n;
-    } else if (dest->type == A_OT_FLOAT) {
-        dest->u.f += src->u.f;
-    } else {
-        fatal(__FILE__, __LINE__, "math ops must be int or float");
-    }
+    dest->type = A_OT_FLOAT;
+    dest->u.f = result;
+}
+
+static void _run_add(V_State *Vs, const V_Instr *ins) {
+    _run_math(Vs, A_OP_ADD);
 }
 static void _run_sub(V_State *Vs, const V_Instr *ins) {
-    V_Value *dest = _getopvalue(Vs, 0);
-    V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != src->type) {
-        fatal(__FILE__, __LINE__, "math ops must have the same type");
-    }
-    if (dest->type == A_OT_INT) {
-        dest->u.n -= src->u.n;
-    } else if (dest->type == A_OT_FLOAT) {
-        dest->u.f -= src->u.f;
-    } else {
-        fatal(__FILE__, __LINE__, "math ops must be int or float");
-    }
+    _run_math(Vs, A_OP_SUB);
 }
 static void _run_mul(V_State *Vs, const V_Instr *ins) {
-    V_Value *dest = _getopvalue(Vs, 0);
-    V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != src->type) {
-        fatal(__FILE__, __LINE__, "math ops must have the same type");
-    }
-    if (dest->type == A_OT_INT) {
-        dest->u.n *= src->u.n;
-    } else if (dest->type == A_OT_FLOAT) {
-        dest->u.f *= src->u.f;
-    } else {
-        fatal(__FILE__, __LINE__, "math ops must be int or float");
-    }
+    _run_math(Vs, A_OP_MUL);
 }
 static void _run_div(V_State *Vs, const V_Instr *ins) {
-    V_Value *dest = _getopvalue(Vs, 0);
-    V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != src->type) {
-        fatal(__FILE__, __LINE__, "math ops must have the same type");
-    }
-    if (dest->type == A_OT_INT) {
-        dest->u.n /= src->u.n;
-    } else if (dest->type == A_OT_FLOAT) {
-        dest->u.f /= src->u.f;
-    } else {
-        fatal(__FILE__, __LINE__, "math ops must be int or float");
-    }
+    _run_math(Vs, A_OP_DIV);
 }
 static void _run_mod(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
     V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != src->type) {
-        fatal(__FILE__, __LINE__, "math ops must have the same type");
+    if (dest->type != A_OT_INT || src->type != A_OT_INT) {
+        V_FATAL("mod(`%') only support int");
     }
-    if (dest->type == A_OT_INT) {
-        dest->u.n = dest->u.n % src->u.n;
-    } else {
-        fatal(__FILE__, __LINE__, "math mod ops must be int");
-    }
+    dest->u.n %= src->u.n;
 }
 static void _run_exp(V_State *Vs, const V_Instr *ins) {
-    V_Value *dest = _getopvalue(Vs, 0);
-    V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != src->type) {
-        fatal(__FILE__, __LINE__, "math ops must have the same type");
-    }
-    if (dest->type == A_OT_INT) {
-        dest->type = A_OT_FLOAT;
-        dest->u.f = pow(dest->u.n, src->u.n);
-    } else if (dest->type == A_OT_FLOAT) {
-        dest->u.f = pow(dest->u.n, src->u.n);
-    } else {
-        fatal(__FILE__, __LINE__, "math ops must be int or float");
-    }
+    _run_math(Vs, A_OP_EXP);
 }
 static void _run_neg(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
@@ -287,7 +263,7 @@ static void _run_neg(V_State *Vs, const V_Instr *ins) {
     } else if (dest->type == A_OT_FLOAT) {
         dest->u.f = -dest->u.f;
     } else {
-        fatal(__FILE__, __LINE__, "math neg only supports int and float");
+        V_FATAL("math neg only supports int and float");
     }
 }
 static void _run_inc(V_State *Vs, const V_Instr *ins) {
@@ -441,7 +417,7 @@ static void _run_callhost(V_State *Vs, const V_Instr *ins) {
     int idx = ins->ops[0].u.n;
     const char *api = _getapi(Vs, idx);
     if (api == NULL) {
-        fatal(__FILE__, __LINE__, "host api not found");
+        V_FATAL("host api not found");
     }
 
     ExportApi fn = _getexportapi(Vs, api);
@@ -666,7 +642,7 @@ void V_run(V_State *Vs) {
             case A_OP_CALLHOST: { _run_callhost(Vs, ins); } break;
             case A_OP_PAUSE: { _run_pause(Vs, ins); } break;
             case A_OP_EXIT: { _run_exit(Vs, ins); } break;
-            default: { fatal(__FILE__, __LINE__, "unknown op"); } break;
+            default: { V_FATAL("unknown op"); } break;
         }
         if (ip == Vs->instr.ip) {
             ++Vs->instr.ip;
@@ -695,7 +671,7 @@ static void _print(V_State *vs) {
         } break;
 
         default: {
-            fatal(__FILE__, __LINE__, "unsupported optype by _print");
+            V_FATAL("unsupported optype by _print");
         }
     }
 }
@@ -715,7 +691,7 @@ static void _println(V_State *vs) {
         } break;
 
         default: {
-            fatal(__FILE__, __LINE__, "unsupported optype by _println");
+            V_FATAL("unsupported optype by _println");
         }
     }
 }
