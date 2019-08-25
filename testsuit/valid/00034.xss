@@ -20,13 +20,13 @@ main()
 		x = x + 1;
 		continue;
 	}
-	do {
+	while(1) {
 		if (x == 15) {
 			break;
 		}
 		x = x + 1;
 		continue;
-	} while(1);
+	}
 	return x - 15;
 }
 
