@@ -27,7 +27,7 @@ test_invalid() {
     for t in $testdir/invalid/*.xss; do
         result=""
 
-        if timeout 5s $runner $t > $scratchdir/t.out 2>&1; then
+        if $runner $t > $scratchdir/t.out 2>&1; then
             result="[Fail]"
         fi
 
@@ -51,26 +51,27 @@ test_valid() {
         result=""
 
         if ! $runner $t > $scratchdir/t.out 2>&1; then
-            result="[RunFail]"
+            result="[CE]"
         else
             okname="$t.ok"
             if [ ! -f "$okname" ]; then
                 okname="$testdir/valid/empty.xss.ok"
             fi
             if ! diff -u "$okname" "$scratchdir/t.out"; then
-                result="[NotMatch]"
+                result="[WA]"
             fi
         fi
 
         if [ "$result" !=  "" ]; then
             fail=$((fail+1))
-            echo "$result" "$t"
+            echo "\n$result" "$t"
             sed -e 's/^//' $scratchdir/t.out
 
             echo "--------------\n"
             cat $t
             return
         else
+            echo "[AC]" "$t"
             success=$((success+1))
         fi
     done
