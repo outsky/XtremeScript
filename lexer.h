@@ -100,6 +100,7 @@ typedef struct {
 } L_State;
 
 void L_printtoken(const L_Token *t);
+const char* L_ttname(L_TokenType tt);
 
 L_State* L_newstate(const char *source);
 void L_freestate(L_State *Ls);

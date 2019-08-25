@@ -9,7 +9,7 @@
 
 #define expect(tt) do {\
     if (L_nexttoken(ps->ls) != tt) {\
-        error("%d expected, but got %d", tt, ps->ls->curtoken.type);\
+        error("`%s' expected, but got `%s'", L_ttname(tt), L_ttname(ps->ls->curtoken.type));\
     }\
 } while (0)
 
