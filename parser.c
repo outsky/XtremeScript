@@ -68,6 +68,12 @@
 #define JNE_T0_T1_LABEL_1 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_VAR, 1, label1)
 #define JNE_T0_T1_LABEL_2 _COND_JMP(I_OP_JNE, I_OT_VAR, 0, I_OT_VAR, 1, label2)
 
+#define _OP_T0(op) do {\
+    I_Code *c = I_newinstr(op);\
+    I_addoperand(c, I_OT_VAR, 0, 0);\
+    P_add_func_icode(ps, c);\
+} while (0)
+
 #define _OP_T0_T1(op) do {\
     I_Code *c = I_newinstr(op);\
     I_addoperand(c, I_OT_VAR, 0, 0);\
@@ -83,6 +89,9 @@
     P_add_func_icode(ps, c);\
 } while (0)
 
+#define NEG_T0 _OP_T0(I_OP_NEG)
+#define INC_T0 _OP_T0(I_OP_INC)
+#define DEC_T0 _OP_T0(I_OP_DEC)
 #define EXP_T0_T1 _OP_T0_T1(I_OP_EXP)
 #define ADD_T0_T1 _OP_T0_T1(I_OP_ADD)
 #define SUB_T0_T1 _OP_T0_T1(I_OP_SUB)
@@ -484,11 +493,41 @@ static void _parse_op_exp(P_State *ps) {
     PUSH_T0;
 }
 
+static void _parse_op_inc_pre(P_State *ps) {
+    _parse_exp(ps);
+    POP_T0;
+    INC_T0;
+    PUSH_T0;
+}
+
+static void _parse_op_inc_post(P_State *ps) {
+    POP_T0;
+    INC_T0;
+    PUSH_T0;
+}
+
+static void _parse_op_dec_pre(P_State *ps) {
+    _parse_exp(ps);
+    POP_T0;
+    DEC_T0;
+    PUSH_T0;
+}
+
+static void _parse_op_dec_post(P_State *ps) {
+    POP_T0;
+    DEC_T0;
+    PUSH_T0;
+}
+
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
     L_TokenType tt = L_nexttoken(ps->ls);
     switch (tt) {
+        case L_TT_OP_EXP: {_parse_op_exp(ps);} break;
+        case L_TT_OP_INC: {_parse_op_inc_post(ps);} break;
+        case L_TT_OP_DEC: {_parse_op_dec_post(ps);} break;
+
         case L_TT_OP_LOG_AND: {_parse_op_log_and(ps);} break;
         case L_TT_OP_LOG_OR: {_parse_op_log_or(ps);} break;
         case L_TT_OP_LOG_NOT: {_parse_op_log_not(ps);} break;
@@ -502,8 +541,6 @@ static void _parse_exp(P_State *ps) {
         case L_TT_OP_G: {_parse_op_relational(ps, I_OP_JG);} break;
         case L_TT_OP_LE: {_parse_op_relational(ps, I_OP_JLE);} break;
         case L_TT_OP_GE: {_parse_op_relational(ps, I_OP_JGE);} break;
-
-        case L_TT_OP_EXP: {_parse_op_exp(ps);} break;
 
         default: {
             L_cachenexttoken(ps->ls);
@@ -621,19 +658,21 @@ static void _parse_factor(P_State *ps) {
         case L_TT_OP_SUB: {
             _parse_factor(ps);
             if (tt == L_TT_OP_ADD) {
-                return;
+                break;
             }
             
             POP_T0;
-
-            // NEG _T0
-            I_Code *NEG = I_newinstr(I_OP_NEG);
-            I_addoperand(NEG, I_OT_VAR, 0, 0);
-            P_add_func_icode(ps, NEG);
-
+            NEG_T0;
             PUSH_T0;
-            return;
-        }
+        } break;
+
+        case L_TT_OP_INC: {
+            _parse_op_inc_pre(ps);
+        } break;
+
+        case L_TT_OP_DEC: {
+            _parse_op_dec_pre(ps);
+        } break;
 
         default: {
             L_printtoken(&ps->ls->curtoken);
