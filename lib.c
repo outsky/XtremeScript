@@ -2,10 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <stdarg.h>
 #include "lib.h"
 
-void fatal(const char *where, int line, char *msg) {
-    printf("[x] %s:%d: %s\n", where, line, msg);
+static void print_error(const char *where, const char *label, const char *fmt, va_list args) {
+    fprintf(stderr, isatty(fileno(stderr)) ? "\e[1;31m[%s]\e[0m " : "[%s] ", label);
+    fprintf(stderr, "%s: ", where);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+}
+
+void errorf(const char *where, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    print_error(where, "x", fmt, args);
+    va_end(args);
     exit(-1);
 }
 

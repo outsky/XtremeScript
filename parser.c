@@ -7,7 +7,7 @@
 
 //#define P_DEBUG
 
-#define P_FATAL(msg) fatal(__FILE__, __LINE__, msg)
+#define P_FATAL(msg) error(msg)
 
 #define _POP(t, n) do {\
     I_Code *c = I_newinstr(I_OP_POP);\

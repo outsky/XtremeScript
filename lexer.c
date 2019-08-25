@@ -72,7 +72,7 @@ _Keyword _keywordcfg[] = {
     {NULL,          0},
 };
 
-#define L_FATAL(msg) printf("<line: %d>\n", Ls->curline); snapshot(Ls->source, Ls->curidx); fatal(__FILE__, __LINE__, msg)
+#define L_FATAL(msg) printf("<line: %d>\n", Ls->curline); snapshot(Ls->source, Ls->curidx); error(msg)
 
 static char _peek(L_State *Ls, int forward);
 

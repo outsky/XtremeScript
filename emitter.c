@@ -5,7 +5,7 @@
 #include "icode.h"
 #include "parser.h"
 
-#define E_FATAL(msg) fatal(__FILE__, __LINE__, msg)
+#define E_FATAL(msg) error(msg)
 #define E_OUTPUT(buff, stream) fwrite(buff, sizeof(char), strlen(buff), stream)
 
 static void _header(P_State *ps, FILE *stream) {

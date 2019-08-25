@@ -7,7 +7,7 @@
 
 //#define V_DEBUG 
 
-#define V_FATAL(msg) fatal(__FILE__, __LINE__, msg)
+#define V_FATAL(msg) error(msg)
 
 /* static function declarations */
 static void _freevalue(V_Value *v);

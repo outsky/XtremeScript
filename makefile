@@ -2,7 +2,7 @@ BIN = xs
 
 CFLAGS = -g -Wall -std=c99 -D_GNU_SOURCE
 
-LIBS = -lm
+LIBS = -lm -lc
 
 ALL_O = main.o lib.o list.o xasm.o xvm.o lexer.o parser.o icode.o emitter.o
 
