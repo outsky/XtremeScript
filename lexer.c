@@ -365,10 +365,10 @@ void L_printtoken(const L_Token *t) {
 }
 
 static const char* ttnames[] = {
-    "INVALID",
-    "EOT",   // end of token stream
+    "<INVALID>",
+    "<EOT>",   // end of token stream
     
-    "IDENT",
+    "<IDENT>",
 
     ";",           // ;
     "(",      // (
@@ -392,9 +392,9 @@ static const char* ttnames[] = {
     "return",
     "host",
 
-    "INT",
-    "FLOAT",
-    "STRING",    // 25
+    "<INT>",
+    "<FLOAT>",
+    "<STRING>",    // 25
 
     "=",        // =
 
