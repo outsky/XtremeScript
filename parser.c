@@ -560,19 +560,17 @@ static void _parse_factor(P_State *ps) {
         case L_TT_TRUE:
         case L_TT_FALSE: 
         case L_TT_IDENT: {
-            I_Code *PUSH = I_newinstr(I_OP_PUSH);
-
             if (tt == L_TT_INT) {
-                I_addoperand(PUSH, I_OT_INT, ps->ls->curtoken.u.n, 0);
+                _PUSH(I_OT_INT, ps->ls->curtoken.u.n);
             } else if (tt == L_TT_FLOAT) {
-                I_addoperand(PUSH, I_OT_FLOAT, ps->ls->curtoken.u.f, 0);
+                _PUSH(I_OT_FLOAT, ps->ls->curtoken.u.f);
             } else if (tt == L_TT_STRING) {
                 int idx = _add_str(ps, ps->ls->curtoken.u.s);
-                I_addoperand(PUSH, I_OT_STRING, idx, 0);
+                _PUSH(I_OT_STRING, idx);
             } else if (tt == L_TT_TRUE) {
-                I_addoperand(PUSH, I_OT_INT, 1, 0);
+                _PUSH(I_OT_INT, 1);
             } else if (tt == L_TT_FALSE) {
-                I_addoperand(PUSH, I_OT_INT, 0, 0);
+                _PUSH(I_OT_INT, 0);
             } else if (tt == L_TT_IDENT) {
                 const char *id = ps->ls->curtoken.u.s;
                 P_Symbol *sb = _get_symbol(ps, id, ps->curfunc);
@@ -587,22 +585,20 @@ static void _parse_factor(P_State *ps) {
                         }
                         POP_T0;
 
-                        I_addoperand(PUSH, I_OT_ARRAY_REL, sb->idx, 0);
+                        _PUSH(I_OT_ARRAY_REL, sb->idx);
                     } else {
                         L_cachenexttoken(ps->ls);
                         if (sb->size != 1) {
                             P_FATAL("array must be accessed by index");
                         }
 
-                        I_addoperand(PUSH, I_OT_VAR, sb->idx, 0);
+                        _PUSH(I_OT_VAR, sb->idx);
                     }
                 } else {
                     _parse_func_call(ps);
-                    I_addoperand(PUSH, I_OT_REG, 0, 0);
+                    _PUSH(I_OT_REG, 0);
                 }
             }
-
-            P_add_func_icode(ps, PUSH);
         } break;
 
         case L_TT_OP_ADD:
