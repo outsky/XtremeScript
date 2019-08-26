@@ -7,6 +7,7 @@
 
 //#define P_DEBUG
 
+#define P_FATAL(...) codesnap(); error(__VA_ARGS__)
 #define codesnap() snapshot(ps->ls->source, ps->ls->curidx, ps->ls->curline)
 #define expect(tt) do {\
     if (L_nexttoken(ps->ls) != tt) {\
@@ -175,7 +176,7 @@ static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope) {
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam) {
     P_Symbol *s = _get_symbol(ps, name, scope);
     if (s != NULL && s->scope == scope) {
-        error("redefined symbol");
+        P_FATAL("redefined symbol");
     }
 
     s = (P_Symbol*)malloc(sizeof(*s));
@@ -214,7 +215,7 @@ static P_Func* _get_func(P_State *ps, const char *name) {
 
 static void _add_func(P_State *ps, const char *name, int param, int ishost) {
     if (_get_func(ps, name)) {
-        error("redefined func");
+        P_FATAL("redefined func");
     }
 
     P_Func *f = (P_Func*)malloc(sizeof(*f));
@@ -277,7 +278,7 @@ static void _parse_if(P_State *ps);
 
 static void _parse_block(P_State *ps) {
     if (ps->curfunc < 0) {
-        error("code blocks illegal in global scope");
+        P_FATAL("code blocks illegal in global scope");
     }
     for (;;) {
         if (L_nexttoken(ps->ls) == L_TT_CLOSE_BRACE) {
@@ -296,12 +297,12 @@ static void _parse_var(P_State *ps) {
     if (L_nexttoken(ps->ls) == L_TT_OPEN_BRACKET) {
         if (L_nexttoken(ps->ls) != L_TT_INT) {
             free(id);
-            error("int expected by array declare");
+            P_FATAL("int expected by array declare");
         }
         size = ps->ls->curtoken.u.n;
         if (L_nexttoken(ps->ls) != L_TT_CLOSE_BRACKET) {
             free(id);
-            error("`]' expected by array declare");
+            P_FATAL("`]' expected by array declare");
         }
     } else {
         L_cachenexttoken(ps->ls);
@@ -314,7 +315,7 @@ static void _parse_var(P_State *ps) {
 
 static void _parse_func(P_State *ps) {
     if (ps->curfunc >= 0) {
-        error("nested func declare is not allowed");
+        P_FATAL("nested func declare is not allowed");
     }
     ps->curfunc = ps->funcs->count;
     expect(L_TT_IDENT);
@@ -322,7 +323,7 @@ static void _parse_func(P_State *ps) {
     
     if (L_nexttoken(ps->ls) != L_TT_OPEN_PAR) {
         free(id);
-        error("`(' expected by func declare");
+        P_FATAL("`(' expected by func declare");
     }
 
     int param = 0;
@@ -332,7 +333,7 @@ static void _parse_func(P_State *ps) {
             L_TokenType tt1 = L_nexttoken(ps->ls);
             if (tt1 != L_TT_IDENT) {
                 free(id);
-                error("ident expected by func declare");
+                P_FATAL("ident expected by func declare");
             }
             _add_symbol(ps, ps->ls->curtoken.u.s, 1, ps->curfunc, 1);
             ++param;
@@ -343,7 +344,7 @@ static void _parse_func(P_State *ps) {
         }
         if (L_nexttoken(ps->ls) != L_TT_CLOSE_PAR) {
             free(id);
-            error("`)' expected by func declare");
+            P_FATAL("`)' expected by func declare");
         }
     }
     _add_func(ps, id, param, 0);
@@ -507,9 +508,9 @@ static void _parse_op_dec_post(P_State *ps) {
 }
 
 static void _parse_op_mod(P_State *ps) {
-    POP_T0;
     _parse_exp(ps);
     POP_T1;
+    POP_T0;
     MOD_T0_T1;
     PUSH_T0;
 }
@@ -623,7 +624,7 @@ static void _parse_factor(P_State *ps) {
                 if (sb != NULL) {
                     if (L_nexttoken(ps->ls) == L_TT_OPEN_BRACKET) {
                         if (sb->size == 1) {
-                            error("unexpected `[' applied to var");
+                            P_FATAL("unexpected `[' applied to var");
                         }
                         _parse_exp(ps);
                         expect(L_TT_CLOSE_BRACKET);
@@ -633,7 +634,7 @@ static void _parse_factor(P_State *ps) {
                     } else {
                         L_cachenexttoken(ps->ls);
                         if (sb->size != 1) {
-                            error("array must be accessed by index");
+                            P_FATAL("array must be accessed by index");
                         }
 
                         _PUSH(I_OT_VAR, sb->idx);
@@ -662,7 +663,7 @@ static void _parse_factor(P_State *ps) {
         case L_TT_OP_LOG_NOT: {_parse_op_log_not(ps);} break;
 
         default: {
-            error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
+            P_FATAL("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
             return;
         }
     }
@@ -670,12 +671,12 @@ static void _parse_factor(P_State *ps) {
 
 static void _parse_func_call(P_State *ps) {
     if (ps->curfunc < 0) {
-        error("function call cant in global scope");
+        P_FATAL("function call cant in global scope");
     }
 
     const P_Func *fn = _get_func(ps, ps->ls->curtoken.u.s);
     if (fn == NULL) {
-        error("not a function");
+        P_FATAL("`%s' is not a function", ps->ls->curtoken.u.s);
     }
     expect(L_TT_OPEN_PAR);
 
@@ -694,7 +695,7 @@ static void _parse_func_call(P_State *ps) {
     }
 
     if (!fn->ishost && param != fn->param) {
-        error("function call param count not match");
+        P_FATAL("function call param count not match");
     }
     
     // CALL|CALLHOST func
@@ -712,7 +713,7 @@ static void _parse_assign(P_State *ps) {
     const char *id = ps->ls->curtoken.u.s;
     const P_Symbol *sb = _get_symbol(ps, id, ps->curfunc);
     if (sb == NULL) {
-        error("not a var");
+        P_FATAL("not a var");
     }
     if (sb->size > 1) {
         expect(L_TT_OPEN_BRACKET);
@@ -735,10 +736,11 @@ static void _parse_assign(P_State *ps) {
         case L_TT_OP_BIT_XORASS: {opc = I_OP_XOR;} break;
         case L_TT_OP_BIT_SLEFTASS: {opc = I_OP_SHL;} break;
         case L_TT_OP_BIT_SRIGHTASS: {opc = I_OP_SHR;} break;
+        case L_TT_OP_INC: {_parse_op_inc_post(ps);} return;
 
         default: {
             codesnap();
-            error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
+            P_FATAL("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
         }
     }
     I_Code *OP = I_newinstr(opc);
@@ -767,7 +769,7 @@ static void _parse_assign(P_State *ps) {
 
 static void _parse_return(P_State *ps) {
     if (ps->curfunc < 0) {
-        error("return cant in global scope");
+        P_FATAL("return cant in global scope");
     }
 
     if (L_nexttoken(ps->ls) == L_TT_SEM) {
@@ -784,7 +786,7 @@ static void _parse_return(P_State *ps) {
 
 static void _parse_while(P_State *ps) {
     if (ps->curfunc < 0) {
-        error("while cant in global scope");
+        P_FATAL("while cant in global scope");
     }
 
     getjmplabels();
@@ -861,21 +863,21 @@ static void _parse_break(P_State *ps) {
 
     int label = _get_break_label(ps);
     if (label < 0) {
-        error("break statement not within loop");
+        P_FATAL("break statement not within loop");
     }
     _JMP(label);
 }
 
 static void _parse_continue(P_State *ps) {
     if (ps->curfunc < 0) {
-        error("continue cant in global scope");
+        P_FATAL("continue cant in global scope");
     }
 
     expect(L_TT_SEM);
 
     int label = _get_continue_label(ps);
     if (label < 0) {
-        error("continue is not allowed here");
+        P_FATAL("continue is not allowed here");
     }
     _JMP(label);
 }
@@ -884,7 +886,7 @@ static void _parse_if(P_State *ps) {
     getjmplabels();
 
     if (ps->curfunc < 0) {
-        error("if cant in global scope");
+        P_FATAL("if cant in global scope");
     }
 
     expect(L_TT_OPEN_PAR);
@@ -916,7 +918,7 @@ static void _parse_if(P_State *ps) {
 void P_add_func_icode(P_State *ps, void *icode) {
     P_Func *f = P_get_func_byidx(ps, ps->curfunc);
     if (f == NULL) {
-        error("func is NULL");
+        P_FATAL("func is NULL");
     }
     list_pushback(f->icodes, icode);
 }
@@ -962,7 +964,7 @@ static void _parse_statement(P_State *ps) {
         case L_TT_IF: {_parse_if(ps);} break;
 
         default: {
-            error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
+            P_FATAL("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
         } break;
     }
 }
