@@ -209,6 +209,17 @@ static double _getopvalue_float(V_State *Vs, int idx) {
     return 0.0;
 }
 
+static int _getopvalue_int(V_State *Vs, int idx) {
+    const V_Value *v = _getopvalue(Vs, idx);
+    if (v->type == A_OT_INT) {
+        return v->u.n;
+    } else if (v->type == A_OT_FLOAT) {
+        return (int)v->u.f;
+    }
+    error("cant covert to double");
+    return 0;
+}
+
 static void _run_math(V_State *Vs, A_OpCode op) {
     double l = _getopvalue_float(Vs, 0);
     double r = _getopvalue_float(Vs, 1);
@@ -326,45 +337,22 @@ static void _run_setchar(V_State *Vs, const V_Instr *ins) {
 static void _run_jmp(V_State *Vs, const V_Instr *ins) {
     Vs->instr.ip = ins->ops[0].u.n;
 }
-static void _run_je(V_State *Vs, const V_Instr *ins) {
-    V_Value *op1 = _getopvalue(Vs, 0);
-    V_Value *op2 = _getopvalue(Vs, 1);
-    if (op1->u.n == op2->u.n) {
-        Vs->instr.ip = ins->ops[2].u.n;
+static void _run_jmp_cond(V_State *Vs, const V_Instr *ins, A_OpCode op) {
+    int op1 = _getopvalue_int(Vs, 0);
+    int op2 = _getopvalue_int(Vs, 1);
+    int jump = 0;
+    switch (op) {
+        case A_OP_JE: {jump = op1 == op2;} break;
+        case A_OP_JNE: {jump = op1 != op2;} break;
+        case A_OP_JG: {jump = op1 > op2;} break;
+        case A_OP_JL: {jump = op1 < op2;} break;
+        case A_OP_JGE: {jump = op1 >= op2;} break;
+        case A_OP_JLE: {jump = op1 <= op2;} break;
+        default: {
+            error("invalid condition jump type %d", op);
+        } break;
     }
-}
-static void _run_jne(V_State *Vs, const V_Instr *ins) {
-    V_Value *op1 = _getopvalue(Vs, 0);
-    V_Value *op2 = _getopvalue(Vs, 1);
-    if (op1->u.n != op2->u.n) {
-        Vs->instr.ip = ins->ops[2].u.n;
-    }
-}
-static void _run_jg(V_State *Vs, const V_Instr *ins) {
-    V_Value *op1 = _getopvalue(Vs, 0);
-    V_Value *op2 = _getopvalue(Vs, 1);
-    if (op1->u.n > op2->u.n) {
-        Vs->instr.ip = ins->ops[2].u.n;
-    }
-}
-static void _run_jl(V_State *Vs, const V_Instr *ins) {
-    V_Value *op1 = _getopvalue(Vs, 0);
-    V_Value *op2 = _getopvalue(Vs, 1);
-    if (op1->u.n < op2->u.n) {
-        Vs->instr.ip = ins->ops[2].u.n;
-    }
-}
-static void _run_jge(V_State *Vs, const V_Instr *ins) {
-    V_Value *op1 = _getopvalue(Vs, 0);
-    V_Value *op2 = _getopvalue(Vs, 1);
-    if (op1->u.n >= op2->u.n) {
-        Vs->instr.ip = ins->ops[2].u.n;
-    }
-}
-static void _run_jle(V_State *Vs, const V_Instr *ins) {
-    V_Value *op1 = _getopvalue(Vs, 0);
-    V_Value *op2 = _getopvalue(Vs, 1);
-    if (op1->u.n <= op2->u.n) {
+    if (jump) {
         Vs->instr.ip = ins->ops[2].u.n;
     }
 }
@@ -627,12 +615,14 @@ void V_run(V_State *Vs) {
             case A_OP_GETCHAR: { _run_getchar(Vs, ins); } break;
             case A_OP_SETCHAR: { _run_setchar(Vs, ins); } break;
             case A_OP_JMP: { _run_jmp(Vs, ins); } break;
-            case A_OP_JE: { _run_je(Vs, ins); } break;
-            case A_OP_JNE: { _run_jne(Vs, ins); } break;
-            case A_OP_JG: { _run_jg(Vs, ins); } break;
-            case A_OP_JL: { _run_jl(Vs, ins); } break;
-            case A_OP_JGE: { _run_jge(Vs, ins); } break;
-            case A_OP_JLE: { _run_jle(Vs, ins); } break;
+
+            case A_OP_JE: 
+            case A_OP_JNE:
+            case A_OP_JG:
+            case A_OP_JL:
+            case A_OP_JGE:
+            case A_OP_JLE:{ _run_jmp_cond(Vs, ins, ins->opcode); } break;
+
             case A_OP_PUSH: { _run_push(Vs, ins); } break;
             case A_OP_POP: { _run_pop(Vs, ins); } break;
             case A_OP_CALL: { _run_call(Vs, ins); } break;
