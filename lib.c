@@ -2,12 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
 #include <stdarg.h>
 #include "lib.h"
 
 static void print_error(const char *where, const char *label, const char *fmt, va_list args) {
-    fprintf(stderr, isatty(fileno(stderr)) ? "\e[1;31m[%s]\e[0m " : "[%s] ", label);
+    fprintf(stderr, "[%s] ", label);
     fprintf(stderr, "%s: ", where);
     vfprintf(stderr, fmt, args);
     fprintf(stderr, "\n");
@@ -21,7 +20,7 @@ void errorf(const char *where, const char *fmt, ...) {
     exit(-1);
 }
 
-void snapshot(const char* code, int pos) {
+void snapshot(const char* code, int pos, int line) {
     int begin, end;
     for (begin = pos - 1; begin > 0; --begin) {
         if (code[begin] == '\n') {
@@ -37,7 +36,7 @@ void snapshot(const char* code, int pos) {
         }
     }
     char *snap = strndup(code + begin, end - begin + 1);
-    printf("'''\n%s\n", snap);
+    printf("line: %d\n%s\n", line, snap);
     free(snap);
     for (int i = begin; i < end + 1; ++i) {
         if (i == pos - 1) {

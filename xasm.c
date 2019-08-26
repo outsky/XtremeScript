@@ -8,7 +8,7 @@
 
 //#define A_DEBUG
 
-#define A_FATAL(msg) printf("<line: %d>\n", As->curline); snapshot(As->program, As->curidx); error(msg)
+#define A_FATAL(msg) snapshot(As->program, As->curidx, As->curline); error(msg)
 
 const char *A_opnames[] = {"MOV", "ADD", "SUB", "MUL", "DIV", "MOD", "EXP", "NEG", "INC", 
     "DEC", "AND", "OR", "XOR", "NOT", "SHL", "SHR", "CONCAT", "GETCHAR", "SETCHAR", 

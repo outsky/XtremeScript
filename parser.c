@@ -7,8 +7,11 @@
 
 //#define P_DEBUG
 
+#define codesnap() snapshot(ps->ls->source, ps->ls->curidx, ps->ls->curline)
 #define expect(tt) do {\
     if (L_nexttoken(ps->ls) != tt) {\
+        codesnap();\
+        snapshot(ps->ls->source, ps->ls->curidx, ps->ls->curline);\
         error("`%s' expected, but got `%s'", L_ttname(tt), L_ttname(ps->ls->curtoken.type));\
     }\
 } while (0)
@@ -101,6 +104,7 @@
 #define SUB_T0_T1 _OP_T0_T1(I_OP_SUB)
 #define MUL_T0_T1 _OP_T0_T1(I_OP_MUL)
 #define DIV_T0_T1 _OP_T0_T1(I_OP_DIV)
+#define MOD_T0_T1 _OP_T0_T1(I_OP_MOD)
 
 static P_Symbol* _get_symbol(P_State *ps, const char *name, int scope);
 static void _add_symbol(P_State *ps, const char *name, int size, int scope, int isparam);
@@ -502,6 +506,14 @@ static void _parse_op_dec_post(P_State *ps) {
     PUSH_T0;
 }
 
+static void _parse_op_mod(P_State *ps) {
+    POP_T0;
+    _parse_exp(ps);
+    POP_T1;
+    MOD_T0_T1;
+    PUSH_T0;
+}
+
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
@@ -510,10 +522,10 @@ static void _parse_exp(P_State *ps) {
         case L_TT_OP_EXP: {_parse_op_exp(ps);} break;
         case L_TT_OP_INC: {_parse_op_inc_post(ps);} break;
         case L_TT_OP_DEC: {_parse_op_dec_post(ps);} break;
+        case L_TT_OP_MOD: {_parse_op_mod(ps);} break;
 
         case L_TT_OP_LOG_AND: {_parse_op_log_and(ps);} break;
         case L_TT_OP_LOG_OR: {_parse_op_log_or(ps);} break;
-        case L_TT_OP_LOG_NOT: {_parse_op_log_not(ps);} break;
         case L_TT_OP_LOG_EQ: {_parse_op_log_eq(ps);} break;
         case L_TT_OP_LOG_NEQ: {_parse_op_log_neq(ps);} break;
         
@@ -645,13 +657,9 @@ static void _parse_factor(P_State *ps) {
             PUSH_T0;
         } break;
 
-        case L_TT_OP_INC: {
-            _parse_op_inc_pre(ps);
-        } break;
-
-        case L_TT_OP_DEC: {
-            _parse_op_dec_pre(ps);
-        } break;
+        case L_TT_OP_INC: {_parse_op_inc_pre(ps);} break;
+        case L_TT_OP_DEC: {_parse_op_dec_pre(ps);} break;
+        case L_TT_OP_LOG_NOT: {_parse_op_log_not(ps);} break;
 
         default: {
             error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
@@ -729,6 +737,7 @@ static void _parse_assign(P_State *ps) {
         case L_TT_OP_BIT_SRIGHTASS: {opc = I_OP_SHR;} break;
 
         default: {
+            codesnap();
             error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
         }
     }
