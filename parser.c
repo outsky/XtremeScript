@@ -799,6 +799,7 @@ static void _parse_while(P_State *ps) {
 
 static void _parse_for(P_State *ps) {
     getjmplabels();
+    _set_break_label(ps, label2);
 
     expect(L_TT_OPEN_PAR);
     // do init
@@ -825,6 +826,7 @@ static void _parse_for(P_State *ps) {
 
     int label3 = _next_jumpidx(ps);
     int label4 = _next_jumpidx(ps);
+    _set_continue_label(ps, label3);
 
     _JMP(label4);
     _LABEL(label3);
@@ -846,15 +848,11 @@ static void _parse_for(P_State *ps) {
 }
 
 static void _parse_break(P_State *ps) {
-    if (ps->curfunc < 0) {
-        error("break cant in global scope");
-    }
-
     expect(L_TT_SEM);
 
     int label = _get_break_label(ps);
     if (label < 0) {
-        error("break is not allowed here");
+        error("break statement not within loop");
     }
     _JMP(label);
 }
