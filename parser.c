@@ -506,14 +506,6 @@ static void _parse_op_dec_post(P_State *ps) {
     PUSH_T0;
 }
 
-static void _parse_op_mod(P_State *ps) {
-    _parse_exp(ps);
-    POP_T1;
-    POP_T0;
-    MOD_T0_T1;
-    PUSH_T0;
-}
-
 static void _parse_exp(P_State *ps) {
     _parse_subexp(ps);
 
@@ -522,7 +514,6 @@ static void _parse_exp(P_State *ps) {
         case L_TT_OP_EXP: {_parse_op_exp(ps);} break;
         case L_TT_OP_INC: {_parse_op_inc_post(ps);} break;
         case L_TT_OP_DEC: {_parse_op_dec_post(ps);} break;
-        case L_TT_OP_MOD: {_parse_op_mod(ps);} break;
 
         case L_TT_OP_LOG_AND: {_parse_op_log_and(ps);} break;
         case L_TT_OP_LOG_OR: {_parse_op_log_or(ps);} break;
@@ -547,7 +538,7 @@ static void _parse_subexp(P_State *ps) {
     _parse_term(ps);
     for (;;) {
         L_TokenType tt = L_nexttoken(ps->ls);
-        if (tt != L_TT_OP_ADD && tt != L_TT_OP_SUB) {
+        if (tt != L_TT_OP_ADD && tt != L_TT_OP_SUB && tt != L_TT_OP_MOD) {
             L_cachenexttoken(ps->ls);
             break;
         }
@@ -559,8 +550,10 @@ static void _parse_subexp(P_State *ps) {
 
         if (tt == L_TT_OP_ADD) {
             ADD_T0_T1;
-        } else {
+        } else if (tt == L_TT_OP_SUB) {
             SUB_T0_T1;
+        } else if (tt == L_TT_OP_MOD) {
+            MOD_T0_T1;
         }
 
         PUSH_T0;

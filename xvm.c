@@ -256,11 +256,10 @@ static void _run_div(V_State *Vs, const V_Instr *ins) {
 }
 static void _run_mod(V_State *Vs, const V_Instr *ins) {
     V_Value *dest = _getopvalue(Vs, 0);
-    V_Value *src = _getopvalue(Vs, 1);
-    if (dest->type != A_OT_INT || src->type != A_OT_INT) {
-        error("mod(`%') only support int");
-    }
-    dest->u.n %= src->u.n;
+    int n0 = _getopvalue_int(Vs, 0);
+    int n1 = _getopvalue_int(Vs, 1);
+    dest->u.n = n0 % n1;
+    dest->type = A_OT_INT;
 }
 static void _run_exp(V_State *Vs, const V_Instr *ins) {
     _run_math(Vs, A_OP_EXP);
