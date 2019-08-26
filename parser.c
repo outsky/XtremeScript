@@ -417,11 +417,10 @@ static void _parse_op_log_not(P_State *ps) {
 static void _parse_op_log_eq(P_State *ps) {
     getjmplabels();
 
-    POP_T0;
-
     _parse_exp(ps);
 
     POP_T1;
+    POP_T0;
     JE_T0_T1_LABEL_1;
     PUSH_0;
     JMP_LABEL_2;
