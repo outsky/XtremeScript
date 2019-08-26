@@ -216,7 +216,7 @@ static int _getopvalue_int(V_State *Vs, int idx) {
     } else if (v->type == A_OT_FLOAT) {
         return (int)v->u.f;
     }
-    error("cant covert to double");
+    error("type %d cant covert to int", v->type);
     return 0;
 }
 

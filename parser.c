@@ -34,7 +34,7 @@
 #define PUSH_T0 _PUSH(I_OT_VAR, 0)
 #define PUSH_T1 _PUSH(I_OT_VAR, 1)
 
-#define GetJumpLabels() \
+#define getjmplabels() \
     int label1 = _next_jumpidx(ps);\
     int label2 = _next_jumpidx(ps)
 
@@ -266,6 +266,7 @@ static void _parse_func_call(P_State *ps);
 static void _parse_assign(P_State *ps);
 static void _parse_return(P_State *ps);
 static void _parse_while(P_State *ps);
+static void _parse_for(P_State *ps);
 static void _parse_break(P_State *ps);
 static void _parse_continue(P_State *ps);
 static void _parse_if(P_State *ps);
@@ -361,7 +362,7 @@ static void _parse_host(P_State *ps) {
 }
 
 static void _parse_op_log_and(P_State *ps) {
-    GetJumpLabels();
+    getjmplabels();
 
     POP_T0;
     JE_T0_0_LABEL_1;
@@ -378,7 +379,7 @@ static void _parse_op_log_and(P_State *ps) {
 }
 
 static void _parse_op_log_or(P_State *ps) {
-    GetJumpLabels();
+    getjmplabels();
 
     POP_T0;
     JNE_T0_0_LABEL_1;
@@ -395,7 +396,7 @@ static void _parse_op_log_or(P_State *ps) {
 }
 
 static void _parse_op_log_not(P_State *ps) {
-    GetJumpLabels();
+    getjmplabels();
 
     _parse_exp(ps);
 
@@ -409,7 +410,7 @@ static void _parse_op_log_not(P_State *ps) {
 }
 
 static void _parse_op_log_eq(P_State *ps) {
-    GetJumpLabels();
+    getjmplabels();
 
     POP_T0;
 
@@ -425,7 +426,7 @@ static void _parse_op_log_eq(P_State *ps) {
 }
 
 static void _parse_op_log_neq(P_State *ps) {
-    GetJumpLabels();
+    getjmplabels();
 
     POP_T0;
 
@@ -441,7 +442,7 @@ static void _parse_op_log_neq(P_State *ps) {
 }
 
 static void _parse_op_relational(P_State *ps, I_OpCode op) {
-    GetJumpLabels();
+    getjmplabels();
 
     _parse_exp(ps);
 
@@ -653,8 +654,7 @@ static void _parse_factor(P_State *ps) {
         } break;
 
         default: {
-            L_printtoken(&ps->ls->curtoken);
-            error("unexpected token type by exp factor");
+            error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
             return;
         }
     }
@@ -729,13 +729,12 @@ static void _parse_assign(P_State *ps) {
         case L_TT_OP_BIT_SRIGHTASS: {opc = I_OP_SHR;} break;
 
         default: {
-            error("assign operator expected");
+            error("%s: unexpected `%s'", __FUNCTION__, L_ttname(tt));
         }
     }
     I_Code *OP = I_newinstr(opc);
 
     _parse_exp(ps);
-    expect(L_TT_SEM);
 
     if (sb->size == 1) {
         /* var */
@@ -779,7 +778,7 @@ static void _parse_while(P_State *ps) {
         error("while cant in global scope");
     }
 
-    GetJumpLabels();
+    getjmplabels();
     _set_continue_label(ps, label1);
     _set_break_label(ps, label2);
 
@@ -795,6 +794,54 @@ static void _parse_while(P_State *ps) {
     _parse_statement(ps);
 
     JMP_LABEL_1;
+    LABEL_2;
+}
+
+static void _parse_for(P_State *ps) {
+    getjmplabels();
+
+    expect(L_TT_OPEN_PAR);
+    // do init
+    if (L_nexttoken(ps->ls) == L_TT_IDENT) {
+        _parse_assign(ps);
+    } else {
+        L_cachenexttoken(ps->ls);
+    }
+    expect(L_TT_SEM);
+
+    LABEL_1;
+
+    // do condition
+    if (L_nexttoken(ps->ls) != L_TT_SEM) {
+        L_cachenexttoken(ps->ls);
+        _parse_exp(ps);
+        expect(L_TT_SEM);
+    } else {
+        PUSH_1;
+    }
+
+    POP_T0;
+    JE_T0_0_LABEL_2;
+
+    int label3 = _next_jumpidx(ps);
+    int label4 = _next_jumpidx(ps);
+
+    _JMP(label4);
+    _LABEL(label3);
+    // do after
+    if (L_nexttoken(ps->ls) == L_TT_IDENT) {
+        _parse_assign(ps);
+    } else {
+        L_cachenexttoken(ps->ls);
+    }
+    expect(L_TT_CLOSE_PAR);
+    JMP_LABEL_1;
+
+    _LABEL(label4);
+    // do body
+    _parse_statement(ps);
+    _JMP(label3);
+
     LABEL_2;
 }
 
@@ -827,7 +874,7 @@ static void _parse_continue(P_State *ps) {
 }
 
 static void _parse_if(P_State *ps) {
-    GetJumpLabels();
+    getjmplabels();
 
     if (ps->curfunc < 0) {
         error("if cant in global scope");
@@ -902,6 +949,7 @@ static void _parse_statement(P_State *ps) {
 
         case L_TT_RETURN: {_parse_return(ps);} break;
         case L_TT_WHILE: {_parse_while(ps);} break;
+        case L_TT_FOR: {_parse_for(ps);} break;
         case L_TT_BREAK: {_parse_break(ps);} break;
         case L_TT_CONTINUE: {_parse_continue(ps);} break;
         case L_TT_IF: {_parse_if(ps);} break;
